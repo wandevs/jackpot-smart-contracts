@@ -1,11 +1,12 @@
 pragma solidity 0.4.26;
 
-import "./SafeMath.sol";
-import "./LibOwnable.sol";
+import "./lib/SafeMath.sol";
+import "./lib/LibOwnable.sol";
 
 
 contract JacksPot is LibOwnable {
     using SafeMath for uint256;
+
     uint256 public constant DIVISOR = 1000;
 
     struct StakerInfo {
@@ -21,7 +22,9 @@ contract JacksPot is LibOwnable {
         address staker;
         uint256 code;
     }
+
     uint256 public pendingStakeOutCount;
+
     mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
 
     struct CodeInfo {
@@ -57,4 +60,6 @@ contract JacksPot is LibOwnable {
     uint256 public feeRate;
 
     address public operator;
+
+    
 }
