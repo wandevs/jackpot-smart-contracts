@@ -22,6 +22,11 @@ const newContractAt = (contract, address) => {
     return instance;
 };
 
+const getJackPotAt = (address) => {
+    const jackpot = newContractAt(JacksPot, address);
+    return jackpot;
+}
+
 const getContracts = async () => {
     const jackpot = await newContract(JacksPot);
     return {
@@ -36,5 +41,6 @@ module.exports = {
     newContract,
     newContractAt,
     getContracts,
+    getJackPotAt,
     clone,
 };
