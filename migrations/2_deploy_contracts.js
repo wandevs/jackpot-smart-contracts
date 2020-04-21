@@ -1,9 +1,6 @@
-var ConvertLib = artifacts.require("./ConvertLib.sol");
-var Math = artifacts.require("./SafeMath.sol");
-var DefiGame =  artifacts.require("./DefiGame.sol");
+var JacksPot =  artifacts.require("./JacksPot.sol");
 
 module.exports = function(deployer,network, accounts) {
-//    deployer.deploy(Math);
-    //deployer.deploy(RandomBeacon);
-    //deployer.link(RandomBeacon,DefiGame)
+    deployer.deploy(JacksPot);
 };
+

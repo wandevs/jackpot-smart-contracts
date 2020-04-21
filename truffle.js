@@ -1,18 +1,39 @@
 
 module.exports = {
-
   networks: {
     development: {
-      //host: "18.237.245.215",
-      host: "localhost",
-      port: 8888,
+      host: '127.0.0.1',
+      port: 7545,
+      network_id: '*',
+      gas: 10000000,
+      gasPrice: 180000000000
+    },
+    coverage: {
+      host: 'localhost',
+      network_id: '*',
+      port: 6545,
+      gas: 0xfffffffffff,
+      gasPrice: 0x01
+    },
+    testnet: {
+      host: "3096j71n97.zicp.vip",
+      // host: "localhost",
+      port: 10669,
       network_id: "*", // Match any network id
       gas: 6000000,
       gasPrice: 180000000000,
-      //from:'0xbf12c73ccc1f7f670bf80d0bba93fe5765df9fec'
-      from:'0x2d0e7c0813a51d3bd1d08246af2a8a7a57d8922e'
+      from:'0xbf12c73ccc1f7f670bf80d0bba93fe5765df9fec'
+      // from:'0x2d0e7c0813a51d3bd1d08246af2a8a7a57d8922e'
     }
-
+  },
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 1000000
+    }
+  },
+  mocha: {
+    enableTimeouts: false
   }
 };
 
