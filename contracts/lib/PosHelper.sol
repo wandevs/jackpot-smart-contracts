@@ -53,4 +53,77 @@ contract PosHelper {
         }
         success = true;
     }
+
+    function callWith32BytesReturnsUint256(
+        address to,
+        bytes32 functionSelector,
+        bytes32 param1
+    ) private view returns (uint256 result, bool success) {
+        assembly {
+            let freePtr := mload(0x40)
+
+            mstore(freePtr, functionSelector)
+            mstore(add(freePtr, 4), param1)
+
+            // call ERC20 Token contract transfer function
+            success := staticcall(gas, to, freePtr, 36, freePtr, 32)
+
+            result := mload(freePtr)
+        }
+    }
+
+    function getRandomByEpochId(uint256 epochId) public view returns (uint256) {
+        bytes32 functionSelector = keccak256(
+            "getRandomNumberByEpochId(uint256)"
+        );
+
+        (uint256 result, bool success) = callWith32BytesReturnsUint256(
+            0x262,
+            functionSelector,
+            bytes32(epochId)
+        );
+
+        if (!success) {
+            revert("ASSEMBLY_CALL getRandomByEpochId failed");
+        }
+
+        return result;
+    }
+
+    function getRandomByBlockTime(uint256 blockTime)
+        public
+        view
+        returns (uint256)
+    {
+        bytes32 functionSelector = keccak256(
+            "getRandomNumberByTimestamp(uint256)"
+        );
+
+        (uint256 result, bool success) = callWith32BytesReturnsUint256(
+            0x262,
+            functionSelector,
+            bytes32(blockTime)
+        );
+
+        if (!success) {
+            revert("ASSEMBLY_CALL getRandomByBlockTime failed");
+        }
+
+        return result;
+    }
+
+    function getEpochId(uint256 blockTime) public view returns (uint256) {
+        bytes32 functionSelector = keccak256("getEpochId(uint256)");
+
+        (uint256 result, bool success) = callWith32BytesReturnsUint256(
+            0x262,
+            functionSelector,
+            bytes32(blockTime)
+        );
+
+        if (!success) {
+            revert("ASSEMBLY_CALL getEpochId failed");
+        }
+        return result;
+    }
 }
