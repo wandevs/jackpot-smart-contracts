@@ -22,14 +22,25 @@ module.exports = {
       network_id: "*", // Match any network id
       gas: 6000000,
       gasPrice: 180000000000,
-      from:'0xbf12c73ccc1f7f670bf80d0bba93fe5765df9fec'
+      from: '0xbf12c73ccc1f7f670bf80d0bba93fe5765df9fec'
       // from:'0x2d0e7c0813a51d3bd1d08246af2a8a7a57d8922e'
     }
   },
-  solc: {
-    optimizer: {
-      enabled: true,
-      runs: 1000000
+  plugins: ["solidity-coverage"],
+  compilers: {
+    solc: {
+      version: '0.4.26',
+      optimizer: {
+        enabled: true,
+        runs: 1000000
+      },
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+        evmVersion: "byzantium"
+      }
     }
   },
   mocha: {

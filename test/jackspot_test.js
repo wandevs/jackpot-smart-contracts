@@ -2,16 +2,12 @@ const assert = require('assert');
 const { getContracts, getWeb3, getJackPotAt } = require('./utils');
 const BigNumber = require('bignumber.js');
 
-const stake = web3.toWei(10);
+const stake = web3.utils.toWei('10');
 const gasPrice = 180e9;
 
 
 contract('JacksPot', accounts => {
   before(async () => {
-    let length = accounts.length < 20 ? accounts.length : 20;
-    for (let i = 1; i < length; i++) {
-      await getWeb3().eth.sendTransaction({ from: accounts[i], to: accounts[0], value: web3.toWei(50) });
-    }
   });
 
   it('stakeIn success when codes and amounts are correct', async () => {
@@ -52,20 +48,21 @@ contract('JacksPot', accounts => {
     }
     res = await jackpot.methods.stakeIn(codes, amounts).send({ from: accounts[0], value: stake * 50, gas: 10000000 });
     // console.log(res);
-    assert.equal(res.events.PoolUpdate.returnValues.demandDepositPool, web3.toWei(590).toString());
+    assert.equal(res.events.PoolUpdate.returnValues.demandDepositPool, web3.utils.toWei('590').toString());
 
     let ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
     // console.log(ret);
     assert.equal(ret.codeCount, '54');
 
-    // ret = await jackpot.methods.codesMap(1111).call();
-    // assert.equal(ret, '2');
+    ret = await jackpot.methods.codesMap(1111).call();
+    assert.equal(ret, '2');
 
-    // res = await jackpot.methods.stakeOut(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
-    // // console.log('gasUsed:', res.gasUsed);
-    // ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
-    // // console.log(ret);
-    // assert.equal(ret.codeCount, '4');
+    res = await jackpot.methods.stakeOut(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
+    // console.log('gasUsed:', res.gasUsed);
+    ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
+    // console.log(ret);
+    console.log(web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[0])));
+    assert.equal(ret.codeCount, '4');
   });
 
   it('stakeIn failed when codes and amount length not match', async () => {
@@ -91,7 +88,7 @@ contract('JacksPot', accounts => {
   it('stakeIn failed when amount < 10', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
-      await jackpot.methods.stakeIn([1111, 2222], [web3.toWei(5), stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
+      await jackpot.methods.stakeIn([1111, 2222], [web3.utils.toWei('5'), stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
@@ -101,7 +98,7 @@ contract('JacksPot', accounts => {
   it('stakeIn failed when amount % 10 != 0', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
-      await jackpot.methods.stakeIn([1111, 2222], [web3.toWei(25), stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
+      await jackpot.methods.stakeIn([1111, 2222], [web3.utils.toWei('25'), stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
@@ -152,7 +149,7 @@ contract('JacksPot', accounts => {
     let jackpot = (await getContracts()).jackpot;
     try {
       let codes = [1];
-      let amounts = [web3.toWei(1)];
+      let amounts = [web3.utils.toWei('1')];
       for (let i = 0; i < 51; i++) {
         amounts.push(stake);
       }
@@ -167,7 +164,7 @@ contract('JacksPot', accounts => {
     let jackpot = (await getContracts()).jackpot;
     try {
       let codes = [1];
-      let amounts = [web3.toWei(1)];
+      let amounts = [web3.utils.toWei('1')];
       for (let i = 0; i < 51; i++) {
         codes.push(i);
       }
