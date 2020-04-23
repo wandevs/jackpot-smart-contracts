@@ -56,8 +56,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         feeRate = 0;
     }
 
-    function () public payable {
-    }
+    function() public payable {}
 
     function stakeIn(uint256[] codes, uint256[] amounts)
         external
@@ -224,12 +223,12 @@ contract JacksPot is LibOwnable, PosHelper, Types {
             }
 
             for (uint256 j = 0; j < codesMap[winnerCode].addrCount; j++) {
-                amounts[i] = prizePool
-                    .mul(stakerInfoMap[winners[i]].codesAmountMap[winnerCode])
+                amounts[j] = prizePool
+                    .mul(stakerInfoMap[winners[j]].codesAmountMap[winnerCode])
                     .div(winnerStakeAmountTotal);
-                stakerInfoMap[winners[i]].prize = stakerInfoMap[winners[i]]
+                stakerInfoMap[winners[j]].prize = stakerInfoMap[winners[j]]
                     .prize
-                    .add(amounts[i]);
+                    .add(amounts[j]);
             }
 
             poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(
@@ -309,6 +308,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
         subsidyInfo.subsidyAmountMap[msg.sender] = msg.value;
         subsidyInfo.total = subsidyInfo.total.add(msg.value);
+        poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
     }
 
     function subsidyOut() external {
@@ -316,6 +316,18 @@ contract JacksPot is LibOwnable, PosHelper, Types {
             subsidyInfo.subsidyAmountMap[msg.sender] > 0,
             "SUBSIDY_AMOUNT_ZERO"
         );
+
+        for (
+            uint256 i = subsidyInfo.startIndex;
+            i < subsidyInfo.startIndex + subsidyInfo.refundingCount;
+            i++
+        ) {
+            require(
+                subsidyInfo.refundingAddressMap[i] != msg.sender,
+                "ALREADY_SUBMIT_SUBSIDY_OUT"
+            );
+        }
+
         subsidyInfo.refundingAddressMap[subsidyInfo.startIndex +
             subsidyInfo.refundingCount] = msg.sender;
         subsidyInfo.refundingCount++;
@@ -489,7 +501,9 @@ contract JacksPot is LibOwnable, PosHelper, Types {
                 subsidyInfo.startIndex++;
                 subsidyInfo.total = subsidyInfo.total.sub(singleAmount);
                 refundingAddress.transfer(singleAmount);
-                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(singleAmount);
+                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
+                    singleAmount
+                );
                 emit SubsidyRefund(refundingAddress, singleAmount);
                 change = true;
             } else {
