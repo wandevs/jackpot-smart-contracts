@@ -54,13 +54,12 @@ contract JacksPot is LibOwnable, PosHelper {
         uint256 delegatePercent;
         uint256 delegatePool;
         uint256 demandDepositPool;
-        uint256 baseDemandPool;
-        uint256 subsidyPool;
     }
 
     PoolInfo public poolInfo;
 
     struct SubsidyInfo {
+        uint256 total;
         uint256 startIndex;
         uint256 refundingCount;
         mapping(uint256 => address) refundingAddressMap;
@@ -95,8 +94,6 @@ contract JacksPot is LibOwnable, PosHelper {
     event PoolUpdate(
         uint256 delegatePool,
         uint256 demandDepositPool,
-        uint256 baseDemandPool,
-        uint256 subsidyPool,
         uint256 prizePool,
         uint256 delegatePercent
     );
@@ -116,6 +113,8 @@ contract JacksPot is LibOwnable, PosHelper {
     event FeeSend(address indexed owner, uint256 indexed amount);
 
     event DelegateOut(address indexed validator, uint256 amount);
+
+    event DelegateIn(address indexed validator, uint256 amount);
 
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
@@ -174,14 +173,11 @@ contract JacksPot is LibOwnable, PosHelper {
         }
 
         poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
-        poolInfo.baseDemandPool = poolInfo.baseDemandPool.add(msg.value);
 
         emit StakeIn(msg.sender, msg.value, codes, amounts);
         emit PoolUpdate(
             poolInfo.delegatePool,
             poolInfo.demandDepositPool,
-            poolInfo.baseDemandPool,
-            poolInfo.subsidyPool,
             poolInfo.prizePool,
             poolInfo.delegatePercent
         );
@@ -194,8 +190,6 @@ contract JacksPot is LibOwnable, PosHelper {
             emit PoolUpdate(
                 poolInfo.delegatePool,
                 poolInfo.demandDepositPool,
-                poolInfo.baseDemandPool,
-                poolInfo.subsidyPool,
                 poolInfo.prizePool,
                 poolInfo.delegatePercent
             );
@@ -234,8 +228,6 @@ contract JacksPot is LibOwnable, PosHelper {
             emit PoolUpdate(
                 poolInfo.delegatePool,
                 poolInfo.demandDepositPool,
-                poolInfo.baseDemandPool,
-                poolInfo.subsidyPool,
                 poolInfo.prizePool,
                 poolInfo.delegatePercent
             );
@@ -243,7 +235,16 @@ contract JacksPot is LibOwnable, PosHelper {
     }
 
     function runDelegateIn() public operatorOnly {
-        //TODO
+        require(validatorInfo.defaultValidator != address(0), "NO_DEFAULT_VALIDATOR");
+        uint256 total = poolInfo.delegatePool.add(poolInfo.demandDepositPool).sub(subsidyInfo.total);
+        uint256 demandDepositAmount = total.mul(DIVISOR - poolInfo.delegatePercent).div(DIVISOR);
+        if (demandDepositAmount > poolInfo.demandDepositPool) {
+            uint256 delegateAmount = demandDepositAmount.sub(poolInfo.demandDepositPool);
+            require(delegateIn(validatorInfo.defaultValidator, delegateAmount), "DELEGATE_IN_FAILED");
+            poolInfo.delegatePool = poolInfo.delegatePool.add(delegateAmount);
+            poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(delegateAmount);
+            emit DelegateIn(validatorInfo.defaultValidator, delegateAmount);
+        }
     }
 
     function open() public operatorOnly {
@@ -294,8 +295,6 @@ contract JacksPot is LibOwnable, PosHelper {
                 prizePool
             );
 
-            poolInfo.baseDemandPool = poolInfo.baseDemandPool.add(prizePool);
-
             poolInfo.prizePool = 0;
 
             if (feeAmount > 0) {
@@ -306,8 +305,6 @@ contract JacksPot is LibOwnable, PosHelper {
             emit PoolUpdate(
                 poolInfo.delegatePool,
                 poolInfo.demandDepositPool,
-                poolInfo.baseDemandPool,
-                poolInfo.subsidyPool,
                 poolInfo.prizePool,
                 poolInfo.delegatePercent
             );
@@ -334,8 +331,14 @@ contract JacksPot is LibOwnable, PosHelper {
 
     function runDelegateOut(address validator) public onlyOwner {
         require(validator != address(0), "INVALID_ADDRESS");
-        require(validatorInfo.validatorAmountMap[validator] > 0, "NO_SUCH_VALIDATOR");
-        require(validatorInfo.exitingValidator == address(0), "THERE_IS_EXITING_VALIDATOR");
+        require(
+            validatorInfo.validatorAmountMap[validator] > 0,
+            "NO_SUCH_VALIDATOR"
+        );
+        require(
+            validatorInfo.exitingValidator == address(0),
+            "THERE_IS_EXITING_VALIDATOR"
+        );
         require(delegateOutAmount == 0, "DELEGATE_OUT_AMOUNT_NOT_ZERO");
         validatorInfo.exitingValidator = validator;
         delegateOutAmount = validatorInfo.validatorAmountMap[validator];
@@ -363,6 +366,7 @@ contract JacksPot is LibOwnable, PosHelper {
     function subsidyIn() public payable {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
         subsidyInfo.subsidyAmountMap[msg.sender] = msg.value;
+        subsidyInfo.total = subsidyInfo.total.add(msg.value);
     }
 
     function subsidyOut() public {
@@ -489,7 +493,6 @@ contract JacksPot is LibOwnable, PosHelper {
                     .validatorMap[validatorInfo.validatorCount - 1];
                 validatorInfo.validatorMap[validatorInfo.validatorCount -
                     1] = address(0);
-                validatorInfo.exitingValidator = address(0);
                 validatorInfo.validatorCount--;
                 return;
             }
@@ -508,9 +511,6 @@ contract JacksPot is LibOwnable, PosHelper {
                 poolInfo.prizePool = poolInfo.prizePool.add(
                     extra.sub(delegateOutAmount)
                 );
-                poolInfo.baseDemandPool = poolInfo.baseDemandPool.add(
-                    delegateOutAmount
-                );
                 poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(
                     delegateOutAmount
                 );
@@ -521,6 +521,7 @@ contract JacksPot is LibOwnable, PosHelper {
                     .exitingValidator] = 0;
                 delegateOutAmount = 0;
                 removeValidatorMap();
+                validatorInfo.exitingValidator = address(0);
             } else {
                 poolInfo.prizePool = address(this).balance.sub(
                     poolInfo.demandDepositPool
@@ -542,13 +543,15 @@ contract JacksPot is LibOwnable, PosHelper {
             );
             uint256 singleAmount = subsidyInfo
                 .subsidyAmountMap[refundingAddress];
-            if (poolInfo.baseDemandPool >= singleAmount) {
-                poolInfo.baseDemandPool = poolInfo.baseDemandPool.sub(singleAmount);
-                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(singleAmount);
+            if (poolInfo.demandDepositPool >= singleAmount) {
+                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
+                    singleAmount
+                );
                 subsidyInfo.subsidyAmountMap[refundingAddress] = 0;
                 subsidyInfo.refundingAddressMap[i] = address(0);
                 subsidyInfo.refundingCount--;
                 subsidyInfo.startIndex++;
+                subsidyInfo.total = subsidyInfo.total.sub(singleAmount);
                 refundingAddress.transfer(singleAmount);
                 emit SubsidyRefund(refundingAddress, singleAmount);
                 change = true;
@@ -597,21 +600,9 @@ contract JacksPot is LibOwnable, PosHelper {
                 poolInfo.demandDepositPool <= address(this).balance,
                 "SC_BALANCE_ERROR"
             );
-            require(totalAmount <= address(this).balance, "SC_BALANCE_ERROR_2");
 
-            poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(totalAmount);
-
-            if (poolInfo.baseDemandPool >= totalAmount) {
-                poolInfo.baseDemandPool = poolInfo.baseDemandPool.sub(totalAmount);
-            } else {
-                poolInfo.subsidyPool = poolInfo.subsidyPool.sub(totalAmount.sub(poolInfo.baseDemandPool));
-                poolInfo.baseDemandPool = 0;
-            }
-
-            require(
-                poolInfo.demandDepositPool ==
-                    (poolInfo.baseDemandPool + poolInfo.subsidyPool),
-                "POOL_VALUE_NOT_MATCH"
+            poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
+                totalAmount
             );
 
             for (uint256 m = 0; m < codes.length; m++) {
