@@ -171,14 +171,22 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         uint256 demandDepositAmount = total
             .mul(DIVISOR - poolInfo.delegatePercent)
             .div(DIVISOR);
-        if (demandDepositAmount > poolInfo.demandDepositPool) {
-            uint256 delegateAmount = demandDepositAmount.sub(
-                poolInfo.demandDepositPool
-            );
+        if (
+            demandDepositAmount <
+            poolInfo.demandDepositPool.sub(subsidyInfo.total)
+        ) {
+            uint256 delegateAmount = poolInfo
+                .demandDepositPool
+                .sub(subsidyInfo.total)
+                .sub(demandDepositAmount);
             require(
                 delegateIn(validatorInfo.defaultValidator, delegateAmount),
                 "DELEGATE_IN_FAILED"
             );
+            validatorInfo.validatorAmountMap[validatorInfo
+                .defaultValidator] = validatorInfo
+                .validatorAmountMap[validatorInfo.defaultValidator]
+                .add(delegateAmount);
             poolInfo.delegatePool = poolInfo.delegatePool.add(delegateAmount);
             poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                 delegateAmount
