@@ -12,12 +12,14 @@ contract('JacksPot', accounts => {
 
   it('stakeIn success when codes and amounts are correct', async () => {
     let jackpot = (await getContracts()).jackpot;
+    console.log(web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[0])));
+
 
     let balance0 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
     let res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000, gasPrice });
     assert.equal(res.status, true);
     let balance1 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
-    let value = new BigNumber(stake*2);
+    let value = new BigNumber(stake * 2);
     let gas = new BigNumber(res.gasUsed);
     gas = gas.multipliedBy(gasPrice);
 
@@ -181,7 +183,7 @@ contract('JacksPot', accounts => {
     let res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000, gasPrice });
     assert.equal(res.status, true);
     let balance1 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
-    let value = new BigNumber(stake*2);
+    let value = new BigNumber(stake * 2);
     let gas = new BigNumber(res.gasUsed);
     gas = gas.multipliedBy(gasPrice);
 
@@ -260,14 +262,75 @@ contract('JacksPot', accounts => {
   it('should failed when normal transfer to sc', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
-      await getWeb3().eth.sendTransaction({from:accounts[0], value:1, to: jackpot._address});
+      await getWeb3().eth.sendTransaction({ from: accounts[0], value: 1, to: jackpot._address });
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
     }
   });
 
-  it('open and close test', async () => {
+  it('should failed for owner call open and close', async () => {
+    let jackpot = (await getContracts()).jackpot;
+    try {
+      await jackpot.methods.open().send({ from: accounts[0], value: 0, gas: 10000000 });
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+
+    try {
+      await jackpot.methods.close().send({ from: accounts[0], value: 0, gas: 10000000 });
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+  });
+
+  it('should failed for non-operator call open and close', async () => {
+    let jackpot = (await getContracts()).jackpot;
+    try {
+      await jackpot.methods.open().send({ from: accounts[1], value: 0, gas: 10000000 });
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+
+    try {
+      await jackpot.methods.close().send({ from: accounts[1], value: 0, gas: 10000000 });
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+  });
+
+  it('should failed call setOperator for non-owner', async () => {
+    let jackpot = (await getContracts()).jackpot;
+    try {
+      await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[2], value: 0, gas: 10000000 });
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+  });
+
+  it('should success call setOperator for owner', async () => {
+    let jackpot = (await getContracts()).jackpot;
+    let res = await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], value: 0, gas: 10000000 });
+    assert.equal(res.status, true);
+  });
+
+  it('should success for operator call open and close', async () => {
+    let jackpot = (await getContracts()).jackpot;
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], value: 0, gas: 10000000 });
+    await jackpot.methods.close().send({ from: accounts[1], value: 0, gas: 10000000 });
+
+    let ret = await jackpot.methods.closed().call();
+    assert.equal(ret, true);
+
+    await jackpot.methods.open().send({ from: accounts[1], value: 0, gas: 10000000 });
+
+    ret = await jackpot.methods.closed().call();
+    assert.equal(ret, false);
 
   });
 

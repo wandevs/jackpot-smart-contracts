@@ -186,11 +186,11 @@ contract JacksPot is LibOwnable, PosHelper, Types {
     }
 
     function open() external operatorOnly {
-        closed = true;
+        closed = false;
     }
 
     function close() external operatorOnly {
-        closed = false;
+        closed = true;
     }
 
     function lotterySettlement() external operatorOnly {
