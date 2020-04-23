@@ -115,6 +115,8 @@ contract JacksPot is LibOwnable, PosHelper {
 
     event FeeSend(address indexed owner, uint256 indexed amount);
 
+    event DelegateOut(address indexed validator, uint256 amount);
+
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
         _;
@@ -332,6 +334,14 @@ contract JacksPot is LibOwnable, PosHelper {
 
     function runDelegateOut(address validator) public onlyOwner {
         require(validator != address(0), "INVALID_ADDRESS");
+        require(validatorInfo.validatorAmountMap[validator] > 0, "NO_SUCH_VALIDATOR");
+        require(validatorInfo.exitingValidator == address(0), "THERE_IS_EXITING_VALIDATOR");
+        require(delegateOutAmount == 0, "DELEGATE_OUT_AMOUNT_NOT_ZERO");
+        validatorInfo.exitingValidator = validator;
+        delegateOutAmount = validatorInfo.validatorAmountMap[validator];
+        require(delegateOut(validator), "DELEGATE_OUT_FAILED");
+
+        emit DelegateOut(validator, delegateOutAmount);
     }
 
     function setFeeRate(uint256 fee) public onlyOwner {
@@ -479,6 +489,7 @@ contract JacksPot is LibOwnable, PosHelper {
                     .validatorMap[validatorInfo.validatorCount - 1];
                 validatorInfo.validatorMap[validatorInfo.validatorCount -
                     1] = address(0);
+                validatorInfo.exitingValidator = address(0);
                 validatorInfo.validatorCount--;
                 return;
             }
