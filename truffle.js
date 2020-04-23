@@ -16,12 +16,14 @@ module.exports = {
       gasPrice: 0x01
     },
     testnet: {
-      host: "3096j71n97.zicp.vip",
+      // host: "3096j71n97.zicp.vip",
       // host: "localhost",
-      port: 10669,
+      host: "192.168.1.4",
+      // port: 10669,
+      port: 6666,
       network_id: "*", // Match any network id
-      gas: 6000000,
-      gasPrice: 180000000000,
+      gas: 1e7,
+      gasPrice: 180e9,
       from: '0xbf12c73ccc1f7f670bf80d0bba93fe5765df9fec'
       // from:'0x2d0e7c0813a51d3bd1d08246af2a8a7a57d8922e'
     }
