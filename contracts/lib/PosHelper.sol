@@ -83,9 +83,7 @@ contract PosHelper {
             bytes32(epochId)
         );
 
-        if (!success) {
-            revert("ASSEMBLY_CALL getRandomByEpochId failed");
-        }
+        require(success, "ASSEMBLY_CALL getRandomByEpochId failed");
 
         return result;
     }
@@ -105,9 +103,7 @@ contract PosHelper {
             bytes32(blockTime)
         );
 
-        if (!success) {
-            revert("ASSEMBLY_CALL getRandomByBlockTime failed");
-        }
+        require(success, "ASSEMBLY_CALL getRandomByBlockTime failed");
 
         return result;
     }
@@ -121,9 +117,8 @@ contract PosHelper {
             bytes32(blockTime)
         );
 
-        if (!success) {
-            revert("ASSEMBLY_CALL getEpochId failed");
-        }
+        require(success, "ASSEMBLY_CALL getEpochId failed");
+
         return result;
     }
 }

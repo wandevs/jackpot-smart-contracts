@@ -29,6 +29,8 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     SubsidyInfo public subsidyInfo;
 
+    mapping(address => uint256) public subsidyWithdrawMap;
+
     uint256 public feeRate;
 
     address public operator;
@@ -56,12 +58,8 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         feeRate = 0;
     }
 
-    function() public payable {
-        require(false, "DO_NOT_ACCEPT_NORMAL_TRANSFER");
-    }
-
-    function stakeIn(uint256[] memory codes, uint256[] memory amounts)
-        public
+    function stakeIn(uint256[] codes, uint256[] amounts)
+        external
         payable
         notClosed
     {
@@ -110,7 +108,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         );
     }
 
-    function stakeOut(uint256[] memory codes) public notClosed {
+    function stakeOut(uint256[] codes) external notClosed {
         checkStakeOutValue(codes);
 
         if (stakeOutAddress(codes, msg.sender)) {
@@ -131,7 +129,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         }
     }
 
-    function update() public operatorOnly {
+    function update() external operatorOnly {
         require(
             poolInfo.demandDepositPool <= address(this).balance,
             "SC_BALANCE_ERROR"
@@ -161,7 +159,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         }
     }
 
-    function runDelegateIn() public operatorOnly {
+    function runDelegateIn() external operatorOnly {
         require(
             validatorInfo.defaultValidator != address(0),
             "NO_DEFAULT_VALIDATOR"
@@ -189,15 +187,15 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         }
     }
 
-    function open() public operatorOnly {
+    function open() external operatorOnly {
         closed = true;
     }
 
-    function close() public operatorOnly {
+    function close() external operatorOnly {
         closed = false;
     }
 
-    function lotterySettlement() public operatorOnly {
+    function lotterySettlement() external operatorOnly {
         uint256 epochId = getEpochId(now);
 
         currentRandom = getRandomByEpochId(epochId);
@@ -261,17 +259,17 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         emit LotteryResult(epochId, winnerCode, prizePool, winners, amounts);
     }
 
-    function setOperator(address op) public onlyOwner {
+    function setOperator(address op) external onlyOwner {
         require(op != address(0), "INVALID_ADDRESS");
         operator = op;
     }
 
-    function setValidator(address validator) public onlyOwner {
+    function setValidator(address validator) external onlyOwner {
         require(validator != address(0), "INVALID_ADDRESS");
         validatorInfo.defaultValidator = validator;
     }
 
-    function runDelegateOut(address validator) public onlyOwner {
+    function runDelegateOut(address validator) external onlyOwner {
         require(validator != address(0), "INVALID_ADDRESS");
         require(
             validatorInfo.validatorAmountMap[validator] > 0,
@@ -289,29 +287,29 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         emit DelegateOut(validator, delegateOutAmount);
     }
 
-    function setFeeRate(uint256 fee) public onlyOwner {
+    function setFeeRate(uint256 fee) external onlyOwner {
         require(fee < 1000, "FEE_RATE_TOO_LAREGE");
         feeRate = fee;
     }
 
-    function setDelegatePercent(uint256 percent) public onlyOwner {
+    function setDelegatePercent(uint256 percent) external onlyOwner {
         require(percent <= 1000, "DELEGATE_PERCENT_TOO_LAREGE");
 
         poolInfo.delegatePercent = percent;
     }
 
-    function setMaxDigital(uint256 max) public onlyOwner {
+    function setMaxDigital(uint256 max) external onlyOwner {
         require(max > 0, "MUST_GREATER_THAN_ZERO");
         maxDigital = max;
     }
 
-    function subsidyIn() public payable {
+    function subsidyIn() external payable {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
         subsidyInfo.subsidyAmountMap[msg.sender] = msg.value;
         subsidyInfo.total = subsidyInfo.total.add(msg.value);
     }
 
-    function subsidyOut() public {
+    function subsidyOut() external {
         require(
             subsidyInfo.subsidyAmountMap[msg.sender] > 0,
             "SUBSIDY_AMOUNT_ZERO"
@@ -319,6 +317,20 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         subsidyInfo.refundingAddressMap[subsidyInfo.startIndex +
             subsidyInfo.refundingCount] = msg.sender;
         subsidyInfo.refundingCount++;
+    }
+
+    function subsidyWithdraw() external {
+        require(subsidyWithdrawMap[msg.sender] > 0, "NOTHING_TO_WITHDRAW");
+
+        poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
+            subsidyWithdrawMap[msg.sender]
+        );
+
+        msg.sender.transfer(subsidyWithdrawMap[msg.sender]);
+
+        emit SubsidyWithdraw(msg.sender, subsidyWithdrawMap[msg.sender]);
+
+        subsidyWithdrawMap[msg.sender] = 0;
     }
 
     function checkStakeInValue(uint256[] memory codes, uint256[] memory amounts)
@@ -482,15 +494,13 @@ contract JacksPot is LibOwnable, PosHelper, Types {
             uint256 singleAmount = subsidyInfo
                 .subsidyAmountMap[refundingAddress];
             if (poolInfo.demandDepositPool >= singleAmount) {
-                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
-                    singleAmount
-                );
                 subsidyInfo.subsidyAmountMap[refundingAddress] = 0;
                 subsidyInfo.refundingAddressMap[i] = address(0);
                 subsidyInfo.refundingCount--;
                 subsidyInfo.startIndex++;
                 subsidyInfo.total = subsidyInfo.total.sub(singleAmount);
-                refundingAddress.transfer(singleAmount);
+                subsidyWithdrawMap[refundingAddress] = subsidyWithdrawMap[refundingAddress]
+                    .add(singleAmount);
                 emit SubsidyRefund(refundingAddress, singleAmount);
                 change = true;
             } else {
@@ -519,7 +529,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         }
     }
 
-    function stakeOutAddress(uint256[] codes, address staker)
+    function stakeOutAddress(uint256[] memory codes, address staker)
         private
         returns (bool)
     {
