@@ -3,26 +3,15 @@ pragma solidity 0.4.26;
 import "./lib/SafeMath.sol";
 import "./lib/LibOwnable.sol";
 import "./lib/PosHelper.sol";
+import "./lib/Types.sol";
 
 
-contract JacksPot is LibOwnable, PosHelper {
+contract JacksPot is LibOwnable, PosHelper, Types {
     using SafeMath for uint256;
 
     uint256 public constant DIVISOR = 1000;
 
-    struct StakerInfo {
-        uint256 prize;
-        uint256 codeCount;
-        mapping(uint256 => uint256) codesMap;
-        mapping(uint256 => uint256) codesAmountMap;
-    }
-
     mapping(address => StakerInfo) public stakerInfoMap;
-
-    struct PendingStakeOut {
-        address staker;
-        uint256 code;
-    }
 
     uint256 public pendingStakeOutStartIndex;
 
@@ -30,41 +19,13 @@ contract JacksPot is LibOwnable, PosHelper {
 
     mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
 
-    struct CodeInfo {
-        uint256 addrCount;
-        mapping(uint256 => address) codeAddressMap;
-    }
-
     mapping(uint256 => CodeInfo) public codesMap;
-
-    struct ValidatorInfo {
-        address defaultValidator;
-        address exitingValidator;
-        uint256 validatorCount;
-        mapping(uint256 => address) validatorMap;
-        mapping(address => uint256) validatorAmountMap;
-    }
 
     ValidatorInfo public validatorInfo;
 
     uint256 public delegateOutAmount;
 
-    struct PoolInfo {
-        uint256 prizePool;
-        uint256 delegatePercent;
-        uint256 delegatePool;
-        uint256 demandDepositPool;
-    }
-
     PoolInfo public poolInfo;
-
-    struct SubsidyInfo {
-        uint256 total;
-        uint256 startIndex;
-        uint256 refundingCount;
-        mapping(uint256 => address) refundingAddressMap;
-        mapping(address => uint256) subsidyAmountMap;
-    }
 
     SubsidyInfo public subsidyInfo;
 
@@ -77,44 +38,6 @@ contract JacksPot is LibOwnable, PosHelper {
     uint256 public maxDigital;
 
     uint256 public currentRandom;
-
-    event StakeIn(
-        address indexed staker,
-        uint256 stakeAmount,
-        uint256[] codes,
-        uint256[] amounts
-    );
-
-    event StakeOut(
-        address indexed staker,
-        uint256[] codes,
-        bool indexed pending
-    );
-
-    event PoolUpdate(
-        uint256 delegatePool,
-        uint256 demandDepositPool,
-        uint256 prizePool,
-        uint256 delegatePercent
-    );
-
-    event SubsidyRefund(address indexed refundAddress, uint256 amount);
-
-    event RandomGenerate(uint256 indexed epochID, uint256 random);
-
-    event LotteryResult(
-        uint256 indexed epochID,
-        uint256 winnerCode,
-        uint256 prizePool,
-        address[] winners,
-        uint256[] amounts
-    );
-
-    event FeeSend(address indexed owner, uint256 indexed amount);
-
-    event DelegateOut(address indexed validator, uint256 amount);
-
-    event DelegateIn(address indexed validator, uint256 amount);
 
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
@@ -131,6 +54,10 @@ contract JacksPot is LibOwnable, PosHelper {
         maxDigital = 10000; // 0000~9999
         closed = false;
         feeRate = 0;
+    }
+
+    function() public payable {
+        require(false, "DO_NOT_ACCEPT_NORMAL_TRANSFER");
     }
 
     function stakeIn(uint256[] memory codes, uint256[] memory amounts)
@@ -235,14 +162,29 @@ contract JacksPot is LibOwnable, PosHelper {
     }
 
     function runDelegateIn() public operatorOnly {
-        require(validatorInfo.defaultValidator != address(0), "NO_DEFAULT_VALIDATOR");
-        uint256 total = poolInfo.delegatePool.add(poolInfo.demandDepositPool).sub(subsidyInfo.total);
-        uint256 demandDepositAmount = total.mul(DIVISOR - poolInfo.delegatePercent).div(DIVISOR);
+        require(
+            validatorInfo.defaultValidator != address(0),
+            "NO_DEFAULT_VALIDATOR"
+        );
+        uint256 total = poolInfo
+            .delegatePool
+            .add(poolInfo.demandDepositPool)
+            .sub(subsidyInfo.total);
+        uint256 demandDepositAmount = total
+            .mul(DIVISOR - poolInfo.delegatePercent)
+            .div(DIVISOR);
         if (demandDepositAmount > poolInfo.demandDepositPool) {
-            uint256 delegateAmount = demandDepositAmount.sub(poolInfo.demandDepositPool);
-            require(delegateIn(validatorInfo.defaultValidator, delegateAmount), "DELEGATE_IN_FAILED");
+            uint256 delegateAmount = demandDepositAmount.sub(
+                poolInfo.demandDepositPool
+            );
+            require(
+                delegateIn(validatorInfo.defaultValidator, delegateAmount),
+                "DELEGATE_IN_FAILED"
+            );
             poolInfo.delegatePool = poolInfo.delegatePool.add(delegateAmount);
-            poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(delegateAmount);
+            poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
+                delegateAmount
+            );
             emit DelegateIn(validatorInfo.defaultValidator, delegateAmount);
         }
     }
@@ -377,10 +319,6 @@ contract JacksPot is LibOwnable, PosHelper {
         subsidyInfo.refundingAddressMap[subsidyInfo.startIndex +
             subsidyInfo.refundingCount] = msg.sender;
         subsidyInfo.refundingCount++;
-    }
-
-    function() public payable {
-        require(false, "DO_NOT_ACCEPT_NORMAL_TRANSFER");
     }
 
     function checkStakeInValue(uint256[] memory codes, uint256[] memory amounts)
