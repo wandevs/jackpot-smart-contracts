@@ -143,7 +143,9 @@ contract JacksPot is LibOwnable, PosHelper {
             //Save stake info
             if (stakerInfoMap[msg.sender].codesAmountMap[codes[i]] > 0) {
                 stakerInfoMap[msg.sender]
-                    .codesAmountMap[codes[i]] += amounts[i];
+                    .codesAmountMap[codes[i]] = stakerInfoMap[msg.sender]
+                    .codesAmountMap[codes[i]]
+                    .add(amounts[i]);
             } else {
                 stakerInfoMap[msg.sender].codesAmountMap[codes[i]] = amounts[i];
                 stakerInfoMap[msg.sender].codesMap[stakerInfoMap[msg.sender]
@@ -169,8 +171,8 @@ contract JacksPot is LibOwnable, PosHelper {
             }
         }
 
-        poolInfo.demandDepositPool += msg.value;
-        poolInfo.baseDemandPool += msg.value;
+        poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
+        poolInfo.baseDemandPool = poolInfo.baseDemandPool.add(msg.value);
 
         emit StakeIn(msg.sender, msg.value, codes, amounts);
         emit PoolUpdate(
@@ -290,6 +292,8 @@ contract JacksPot is LibOwnable, PosHelper {
                 prizePool
             );
 
+            poolInfo.baseDemandPool = poolInfo.baseDemandPool.add(prizePool);
+
             poolInfo.prizePool = 0;
 
             if (feeAmount > 0) {
@@ -387,7 +391,7 @@ contract JacksPot is LibOwnable, PosHelper {
             require(amounts[i] >= minAmount, "AMOUNT_TOO_SMALL");
             require(amounts[i] % minAmount == 0, "AMOUNT_MUST_TIMES_10");
             require(codes[i] < maxDigital, "OUT_OF_MAX_DIGITAL");
-            totalAmount += amounts[i];
+            totalAmount = totalAmount.add(amounts[i]);
         }
 
         require(totalAmount == msg.value, "VALUE_NOT_EQUAL_AMOUNT");
@@ -484,22 +488,32 @@ contract JacksPot is LibOwnable, PosHelper {
     function updateBalance() private returns (bool) {
         if (
             address(this).balance >
-            (poolInfo.demandDepositPool + poolInfo.prizePool)
+            poolInfo.demandDepositPool.add(poolInfo.prizePool)
         ) {
-            uint256 extra = address(this).balance -
-                (poolInfo.demandDepositPool + poolInfo.prizePool);
+            uint256 extra = address(this).balance.sub(
+                poolInfo.demandDepositPool.add(poolInfo.prizePool)
+            );
             if ((delegateOutAmount > 0) && (delegateOutAmount <= extra)) {
-                poolInfo.prizePool += extra - delegateOutAmount;
-                poolInfo.baseDemandPool += delegateOutAmount;
-                poolInfo.delegatePool -= delegateOutAmount;
+                poolInfo.prizePool = poolInfo.prizePool.add(
+                    extra.sub(delegateOutAmount)
+                );
+                poolInfo.baseDemandPool = poolInfo.baseDemandPool.add(
+                    delegateOutAmount
+                );
+                poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(
+                    delegateOutAmount
+                );
+                poolInfo.delegatePool = poolInfo.delegatePool.sub(
+                    delegateOutAmount
+                );
                 validatorInfo.validatorAmountMap[validatorInfo
                     .exitingValidator] = 0;
                 delegateOutAmount = 0;
                 removeValidatorMap();
             } else {
-                poolInfo.prizePool =
-                    address(this).balance -
-                    poolInfo.demandDepositPool;
+                poolInfo.prizePool = address(this).balance.sub(
+                    poolInfo.demandDepositPool
+                );
             }
             return true;
         }
@@ -518,7 +532,8 @@ contract JacksPot is LibOwnable, PosHelper {
             uint256 singleAmount = subsidyInfo
                 .subsidyAmountMap[refundingAddress];
             if (poolInfo.baseDemandPool >= singleAmount) {
-                poolInfo.baseDemandPool -= singleAmount;
+                poolInfo.baseDemandPool = poolInfo.baseDemandPool.sub(singleAmount);
+                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(singleAmount);
                 subsidyInfo.subsidyAmountMap[refundingAddress] = 0;
                 subsidyInfo.refundingAddressMap[i] = address(0);
                 subsidyInfo.refundingCount--;
@@ -559,10 +574,12 @@ contract JacksPot is LibOwnable, PosHelper {
         uint256 totalAmount = stakerInfoMap[staker].prize;
 
         for (uint256 i = 0; i < codes.length; i++) {
-            totalAmount += stakerInfoMap[staker].codesAmountMap[codes[i]];
+            totalAmount = totalAmount.add(
+                stakerInfoMap[staker].codesAmountMap[codes[i]]
+            );
         }
 
-        totalAmount += stakerInfoMap[staker].prize;
+        totalAmount = totalAmount.add(stakerInfoMap[staker].prize);
 
         if (totalAmount <= poolInfo.demandDepositPool) {
             require(
@@ -571,12 +588,12 @@ contract JacksPot is LibOwnable, PosHelper {
             );
             require(totalAmount <= address(this).balance, "SC_BALANCE_ERROR_2");
 
-            poolInfo.demandDepositPool -= totalAmount;
+            poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(totalAmount);
 
             if (poolInfo.baseDemandPool >= totalAmount) {
-                poolInfo.baseDemandPool -= totalAmount;
+                poolInfo.baseDemandPool = poolInfo.baseDemandPool.sub(totalAmount);
             } else {
-                poolInfo.subsidyPool -= (totalAmount - poolInfo.baseDemandPool);
+                poolInfo.subsidyPool = poolInfo.subsidyPool.sub(totalAmount.sub(poolInfo.baseDemandPool));
                 poolInfo.baseDemandPool = 0;
             }
 
