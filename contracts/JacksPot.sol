@@ -105,7 +105,15 @@ contract JacksPot is LibOwnable, PosHelper {
 
     event RandomGenerate(uint256 indexed epochID, uint256 random);
 
-    event LotteryResult(uint256 indexed epochID, uint256 winnerCode, uint256 prizePool, address[] winners, uint256[] amounts);
+    event LotteryResult(
+        uint256 indexed epochID,
+        uint256 winnerCode,
+        uint256 prizePool,
+        address[] winners,
+        uint256[] amounts
+    );
+
+    event FeeSend(address indexed owner, uint256 indexed amount);
 
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
@@ -242,18 +250,16 @@ contract JacksPot is LibOwnable, PosHelper {
         closed = false;
     }
 
-    function random() public operatorOnly {
-        uint256 epochId = getEpochId(now);
-        currentRandom = getRandomByEpochId(epochId);
-        emit RandomGenerate(epochId, currentRandom);
-    }
-
     function lotterySettlement() public operatorOnly {
+        uint256 epochId = getEpochId(now);
+
+        currentRandom = getRandomByEpochId(epochId);
+
         uint256 winnerCode = currentRandom.mod(maxDigital);
 
-        uint256 epochId = getEpochId(now);
+        uint256 feeAmount = poolInfo.prizePool.mul(feeRate).div(DIVISOR);
 
-        uint256 prizePool = poolInfo.prizePool;
+        uint256 prizePool = poolInfo.prizePool.sub(feeAmount);
 
         address[] memory winners;
 
@@ -261,12 +267,52 @@ contract JacksPot is LibOwnable, PosHelper {
 
         if (codesMap[winnerCode].addrCount > 0) {
             winners = new address[](codesMap[winnerCode].addrCount);
-            //TODO
+            amounts = new uint256[](codesMap[winnerCode].addrCount);
+
+            uint256 winnerStakeAmountTotal = 0;
+            for (uint256 i = 0; i < codesMap[winnerCode].addrCount; i++) {
+                winners[i] = codesMap[winnerCode].codeAddressMap[i];
+                winnerStakeAmountTotal = winnerStakeAmountTotal.add(
+                    stakerInfoMap[winners[i]].codesAmountMap[winnerCode]
+                );
+            }
+
+            for (uint256 j = 0; j < codesMap[winnerCode].addrCount; j++) {
+                amounts[i] = prizePool
+                    .mul(stakerInfoMap[winners[i]].codesAmountMap[winnerCode])
+                    .div(winnerStakeAmountTotal);
+                stakerInfoMap[winners[i]].prize = stakerInfoMap[winners[i]]
+                    .prize
+                    .add(amounts[i]);
+            }
+
+            poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(
+                prizePool
+            );
+
+            poolInfo.prizePool = 0;
+
+            if (feeAmount > 0) {
+                owner().transfer(feeAmount);
+                emit FeeSend(owner(), feeAmount);
+            }
+
+            emit PoolUpdate(
+                poolInfo.delegatePool,
+                poolInfo.demandDepositPool,
+                poolInfo.baseDemandPool,
+                poolInfo.subsidyPool,
+                poolInfo.prizePool,
+                poolInfo.delegatePercent
+            );
         } else {
-            //TODO
+            winners = new address[](1);
+            winners[0] = address(0);
+            amounts = new uint256[](1);
+            amounts[0] = 0;
         }
 
-
+        emit RandomGenerate(epochId, currentRandom);
         emit LotteryResult(epochId, winnerCode, prizePool, winners, amounts);
     }
 
