@@ -79,6 +79,4 @@ contract Types {
     event DelegateOut(address indexed validator, uint256 amount);
 
     event DelegateIn(address indexed validator, uint256 amount);
-
-    event SubsidyWithdraw(address indexed sender, uint256 amount);
 }

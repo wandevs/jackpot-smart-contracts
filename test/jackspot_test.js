@@ -58,14 +58,14 @@ contract('JacksPot', accounts => {
     // console.log(ret);
     assert.equal(ret.codeCount, '54');
 
-    ret = await jackpot.methods.codesMap(1111).call();
-    assert.equal(ret, '2');
+    // ret = await jackpot.methods.codesMap(1111).call();
+    // assert.equal(ret, '2');
 
-    res = await jackpot.methods.stakeOut(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
-    // console.log('gasUsed:', res.gasUsed);
-    ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
-    // console.log(ret);
-    assert.equal(ret.codeCount, '4');
+    // res = await jackpot.methods.stakeOut(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
+    // // console.log('gasUsed:', res.gasUsed);
+    // ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
+    // // console.log(ret);
+    // assert.equal(ret.codeCount, '4');
   });
 
   it('stakeIn failed when codes and amount length not match', async () => {

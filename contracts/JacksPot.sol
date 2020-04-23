@@ -29,8 +29,6 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     SubsidyInfo public subsidyInfo;
 
-    mapping(address => uint256) public subsidyWithdrawMap;
-
     uint256 public feeRate;
 
     address public operator;
@@ -305,6 +303,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     function subsidyIn() external payable {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
+        require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
         subsidyInfo.subsidyAmountMap[msg.sender] = msg.value;
         subsidyInfo.total = subsidyInfo.total.add(msg.value);
     }
@@ -319,20 +318,6 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         subsidyInfo.refundingCount++;
     }
 
-    function subsidyWithdraw() external {
-        require(subsidyWithdrawMap[msg.sender] > 0, "NOTHING_TO_WITHDRAW");
-
-        poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
-            subsidyWithdrawMap[msg.sender]
-        );
-
-        msg.sender.transfer(subsidyWithdrawMap[msg.sender]);
-
-        emit SubsidyWithdraw(msg.sender, subsidyWithdrawMap[msg.sender]);
-
-        subsidyWithdrawMap[msg.sender] = 0;
-    }
-
     function checkStakeInValue(uint256[] memory codes, uint256[] memory amounts)
         private
         view
@@ -340,6 +325,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         uint256 maxCount = 50;
         uint256 minAmount = 10 ether;
 
+        require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
         require(codes.length > 0, "INVALID_CODES_LENGTH");
         require(amounts.length > 0, "INVALID_AMOUNTS_LENGTH");
         require(amounts.length <= maxCount, "AMOUNTS_LENGTH_TOO_LONG");
@@ -499,8 +485,8 @@ contract JacksPot is LibOwnable, PosHelper, Types {
                 subsidyInfo.refundingCount--;
                 subsidyInfo.startIndex++;
                 subsidyInfo.total = subsidyInfo.total.sub(singleAmount);
-                subsidyWithdrawMap[refundingAddress] = subsidyWithdrawMap[refundingAddress]
-                    .add(singleAmount);
+                refundingAddress.transfer(singleAmount);
+                poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(singleAmount);
                 emit SubsidyRefund(refundingAddress, singleAmount);
                 change = true;
             } else {
