@@ -56,6 +56,9 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         feeRate = 0;
     }
 
+    function () public payable {
+    }
+
     function stakeIn(uint256[] codes, uint256[] amounts)
         external
         payable
