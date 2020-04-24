@@ -4,11 +4,12 @@ import "./lib/SafeMath.sol";
 import "./lib/LibOwnable.sol";
 import "./lib/PosHelper.sol";
 import "./lib/Types.sol";
+import "./lib/ReentrancyGuard.sol";
 
 
 /// @title Jack's Pot Smart Contract
 /// @dev Jack’s Pot is a no-loss lottery game built on Wanchain
-contract JacksPot is LibOwnable, PosHelper, Types {
+contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 public constant DIVISOR = 1000;
@@ -51,6 +52,8 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         _;
     }
 
+    /// --------------Public Method--------------------------
+
     constructor() public {
         poolInfo.delegatePercent = 700; // 70%
         maxDigital = 10000; // 0000~9999
@@ -59,7 +62,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
     }
 
     /// @dev The operating contract accepts general transfer, and the transferred funds directly enter the prize pool.
-    function() public payable {}
+    function() public payable nonReentrant {}
 
     /// @dev User betting function.
     /// @param codes An array that can contain Numbers selected by the user.
@@ -68,6 +71,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
         external
         payable
         notClosed
+        nonReentrant
     {
         checkStakeInValue(codes, amounts);
 
@@ -116,7 +120,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     /// @dev This is the user refund function, where users can apply to withdraw funds invested on certain Numbers and receive bonuses.
     /// @param codes The array contains the number the user wants a refund from.
-    function stakeOut(uint256[] codes) external notClosed {
+    function stakeOut(uint256[] codes) external notClosed nonReentrant {
         checkStakeOutValue(codes);
 
         if (stakeOutAddress(codes, msg.sender)) {
@@ -138,7 +142,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
     }
 
     /// @dev The settlement robot calls this function daily to update the capital pool and settle the pending refund.
-    function update() external operatorOnly {
+    function update() external operatorOnly nonReentrant {
         require(
             poolInfo.demandDepositPool <= address(this).balance,
             "SC_BALANCE_ERROR"
@@ -169,7 +173,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
     }
 
     /// @dev After the settlement is completed, the settlement robot will call this function to conduct POS delegation to the funds in the capital pool that meet the proportion of the commission.
-    function runDelegateIn() external operatorOnly {
+    function runDelegateIn() external operatorOnly nonReentrant {
         require(
             validatorInfo.defaultValidator != address(0),
             "NO_DEFAULT_VALIDATOR"
@@ -206,20 +210,23 @@ contract JacksPot is LibOwnable, PosHelper, Types {
     }
 
     /// @dev This function is called regularly by the robot every 6 morning to open betting.
-    function open() external operatorOnly {
+    function open() external operatorOnly nonReentrant {
         closed = false;
     }
 
     /// @dev This function is called regularly by the robot on 4 nights a week to close bets.
-    function close() external operatorOnly {
+    function close() external operatorOnly nonReentrant {
         closed = true;
     }
 
     /// @dev Lottery settlement function. On the Friday night, the robot calls this function to get random Numbers and complete the lucky draw process.
-    function lotterySettlement() external operatorOnly {
+    function lotterySettlement() external operatorOnly nonReentrant {
         uint256 epochId = getEpochId(now);
 
-        currentRandom = getRandomByEpochId(epochId);
+        // should use the random number latest
+        currentRandom = getRandomByEpochId(epochId + 1);
+
+        require(currentRandom != 0, "RANDOM_NUMBER_NOT_READY");
 
         uint256 winnerCode = currentRandom.mod(maxDigital);
 
@@ -282,21 +289,21 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     /// @dev The owner calls this function to set the operator address.
     /// @param op This is operator address.
-    function setOperator(address op) external onlyOwner {
+    function setOperator(address op) external onlyOwner nonReentrant {
         require(op != address(0), "INVALID_ADDRESS");
         operator = op;
     }
 
     /// @dev The owner calls this function to set the default POS validator node address for delegation.
     /// @param validator The validator address.
-    function setValidator(address validator) external onlyOwner {
+    function setValidator(address validator) external onlyOwner nonReentrant {
         require(validator != address(0), "INVALID_ADDRESS");
         validatorInfo.defaultValidator = validator;
     }
 
     /// @dev The owner calls this function to drive the contract to issue a POS delegate refund to the specified validator address.
     /// @param validator The validator address.
-    function runDelegateOut(address validator) external onlyOwner {
+    function runDelegateOut(address validator) external onlyOwner nonReentrant {
         require(validator != address(0), "INVALID_ADDRESS");
         require(
             validatorInfo.validatorAmountMap[validator] > 0,
@@ -316,14 +323,14 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     /// @dev The owner calls this function to modify The handling fee Shared from The prize pool.
     /// @param fee Any parts per thousand.
-    function setFeeRate(uint256 fee) external onlyOwner {
+    function setFeeRate(uint256 fee) external onlyOwner nonReentrant {
         require(fee < 1000, "FEE_RATE_TOO_LAREGE");
         feeRate = fee;
     }
 
     /// @dev Owner calls this function to modify the default POS delegate ratio for the pool.
     /// @param percent Any parts per thousand.
-    function setDelegatePercent(uint256 percent) external onlyOwner {
+    function setDelegatePercent(uint256 percent) external onlyOwner nonReentrant {
         require(percent <= 1000, "DELEGATE_PERCENT_TOO_LAREGE");
 
         poolInfo.delegatePercent = percent;
@@ -331,13 +338,13 @@ contract JacksPot is LibOwnable, PosHelper, Types {
 
     /// @dev Owner calls this function to modify the number of lucky draw digits, and the random number takes the modulus of this number.
     /// @param max New value.
-    function setMaxDigital(uint256 max) external onlyOwner {
+    function setMaxDigital(uint256 max) external onlyOwner nonReentrant {
         require(max > 0, "MUST_GREATER_THAN_ZERO");
         maxDigital = max;
     }
 
     /// @dev Anyone can call this function to inject a subsidy into the current pool, which is used for the user's refund. It can be returned at any time.
-    function subsidyIn() external payable {
+    function subsidyIn() external payable nonReentrant {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
         require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
         subsidyInfo.subsidyAmountMap[msg.sender] = msg.value;
@@ -346,7 +353,7 @@ contract JacksPot is LibOwnable, PosHelper, Types {
     }
 
     /// @dev Apply for subsidy refund function. If the current pool is sufficient for application of subsidy, the refund will be made on the daily settlement.
-    function subsidyOut() external {
+    function subsidyOut() external nonReentrant {
         require(
             subsidyInfo.subsidyAmountMap[msg.sender] > 0,
             "SUBSIDY_AMOUNT_ZERO"
@@ -367,6 +374,8 @@ contract JacksPot is LibOwnable, PosHelper, Types {
             subsidyInfo.refundingCount] = msg.sender;
         subsidyInfo.refundingCount++;
     }
+
+    /// --------------Private Method--------------------------
 
     function checkStakeInValue(uint256[] memory codes, uint256[] memory amounts)
         private
