@@ -111,6 +111,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
         emit StakeIn(msg.sender, msg.value, codes, amounts);
         emit PoolUpdate(
+            now,
             poolInfo.delegatePool,
             poolInfo.demandDepositPool,
             poolInfo.prizePool,
@@ -125,6 +126,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
         if (stakeOutAddress(codes, msg.sender)) {
             emit PoolUpdate(
+                now,
                 poolInfo.delegatePool,
                 poolInfo.demandDepositPool,
                 poolInfo.prizePool,
@@ -164,6 +166,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
         if (changeCnt > 0) {
             emit PoolUpdate(
+                now,
                 poolInfo.delegatePool,
                 poolInfo.demandDepositPool,
                 poolInfo.prizePool,
@@ -271,6 +274,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
             }
 
             emit PoolUpdate(
+                now,
                 poolInfo.delegatePool,
                 poolInfo.demandDepositPool,
                 poolInfo.prizePool,

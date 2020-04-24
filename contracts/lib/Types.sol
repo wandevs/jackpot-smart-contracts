@@ -56,6 +56,7 @@ contract Types {
     );
 
     event PoolUpdate(
+        uint256 indexed timestamp,
         uint256 delegatePool,
         uint256 demandDepositPool,
         uint256 prizePool,
