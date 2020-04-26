@@ -17,10 +17,10 @@ module.exports = {
     },
     testnet: {
       // host: "3096j71n97.zicp.vip",
-      // host: "localhost",
-      host: "192.168.1.4",
-      // port: 10669,
-      port: 6666,
+      host: "wangame.ml",
+      // host: "192.168.1.4",
+      port: 10669,
+      // port: 6666,
       network_id: "*", // Match any network id
       gas: 1e7,
       gasPrice: 180e9,

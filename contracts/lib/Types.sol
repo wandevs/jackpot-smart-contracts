@@ -6,6 +6,7 @@ contract Types {
         uint256 prize;
         uint256 codeCount;
         mapping(uint256 => uint256) codesMap;
+        mapping(uint256 => uint256) codesIndexMap;
         mapping(uint256 => uint256) codesAmountMap;
     }
 
@@ -17,14 +18,16 @@ contract Types {
     struct CodeInfo {
         uint256 addrCount;
         mapping(uint256 => address) codeAddressMap;
+        mapping(address => uint256) addressIndexMap;
     }
 
-    struct ValidatorInfo {
+    struct ValidatorsInfo {
         address defaultValidator;
         address exitingValidator;
-        uint256 validatorCount;
-        mapping(uint256 => address) validatorMap;
-        mapping(address => uint256) validatorAmountMap;
+        uint256 validatorsCount;
+        mapping(uint256 => address) validatorsMap;
+        mapping(address => uint256) validatorIndexMap;
+        mapping(address => uint256) validatorsAmountMap;
     }
 
     struct PoolInfo {
@@ -44,24 +47,23 @@ contract Types {
 
     event StakeIn(
         address indexed staker,
-        uint256 stakeAmount,
-        uint256[] codes,
-        uint256[] amounts
+        uint256 stakeAmount
     );
 
     event StakeOut(
         address indexed staker,
-        uint256[] codes,
-        bool indexed pending
+        bool indexed success,
+        uint256[] codes
     );
 
-    event PoolUpdate(
-        uint256 indexed timestamp,
-        uint256 delegatePool,
-        uint256 demandDepositPool,
-        uint256 prizePool,
-        uint256 delegatePercent
+    event GasNotEnough();
+
+    event PrizeWithdraw(
+        address indexed staker,
+        bool indexed success
     );
+
+    event UpdateSuccess();
 
     event SubsidyRefund(address indexed refundAddress, uint256 amount);
 
