@@ -24,27 +24,29 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     mapping(address => StakerInfo) public stakerInfoMap;
 
-    uint256 public pendingStakeOutStartIndex;
-
-    uint256 public pendingStakeOutCount;
-
-    mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
-
-    uint256 public pendingPrizeWithdrawStartIndex;
-
-    uint256 public pendingPrizeWithdrawCount;
-
-    mapping(uint256 => address) public pendingPrizeWithdrawMap;
-
     mapping(uint256 => CodeInfo) public codesMap;
 
+    uint256 public pendingStakeOutStartIndex;
+    uint256 public pendingStakeOutCount;
+    mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
+    mapping(address => mapping(uint256 => uint256)) public pendingStakeOutSearchMap;
+
+    uint256 public pendingPrizeWithdrawStartIndex;
+    uint256 public pendingPrizeWithdrawCount;
+    mapping(uint256 => address) public pendingPrizeWithdrawMap;
+
     ValidatorsInfo public validatorsInfo;
+    mapping(uint256 => address) validatorsMap;
+    mapping(address => uint256) validatorIndexMap;
+    mapping(address => uint256) validatorsAmountMap;
 
     uint256 public delegateOutAmount;
 
     PoolInfo public poolInfo;
 
     SubsidyInfo public subsidyInfo;
+
+    mapping(address => uint256) subsidyAmountMap;
 
     uint256 public feeRate;
 
@@ -132,7 +134,6 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     /// @dev This is the user refund function, where users can apply to withdraw funds invested on certain Numbers.
     /// @param codes The array contains the number the user wants a refund from.
-    /// TODO add a return value.
     function stakeOut(uint256[] codes)
         external
         notClosed
@@ -149,6 +150,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 pendingStakeOutMap[pendingStakeOutCount].staker = msg.sender;
                 pendingStakeOutMap[pendingStakeOutCount].code = codes[n];
                 pendingStakeOutCount++;
+                pendingStakeOutSearchMap[msg.sender][codes[n]] = 1;
             }
 
             emit StakeOut(msg.sender, false, codes);
@@ -171,7 +173,6 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     }
 
     /// @dev The settlement robot calls this function daily to update the capital pool and settle the pending refund.
-    /// TODO add a event for result.
     function update() external operatorOnly nonReentrant {
         require(
             poolInfo.demandDepositPool <= address(this).balance,
@@ -215,7 +216,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 .sub(demandDepositAmount);
 
             if (
-                (validatorsInfo.validatorIndexMap[defaultValidator] == 0) &&
+                (validatorIndexMap[defaultValidator] == 0) &&
                 (delegateAmount < firstDelegateMinValue)
             ) {
                 emit DelegateIn(validatorsInfo.defaultValidator, 0);
@@ -227,16 +228,13 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 "DELEGATE_IN_FAILED"
             );
 
-            validatorsInfo
-                .validatorsAmountMap[defaultValidator] = validatorsInfo
-                .validatorsAmountMap[defaultValidator]
+            validatorsAmountMap[defaultValidator] = validatorsAmountMap[defaultValidator]
                 .add(delegateAmount);
-            if (validatorsInfo.validatorIndexMap[defaultValidator] == 0) {
-                validatorsInfo.validatorsMap[validatorsInfo
+            if (validatorIndexMap[defaultValidator] == 0) {
+                validatorsMap[validatorsInfo
                     .validatorsCount] = defaultValidator;
                 validatorsInfo.validatorsCount++;
-                validatorsInfo
-                    .validatorIndexMap[defaultValidator] = validatorsInfo
+                validatorIndexMap[defaultValidator] = validatorsInfo
                     .validatorsCount;
             }
 
@@ -282,7 +280,6 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
             winners = new address[](codesMap[winnerCode].addrCount);
             amounts = new uint256[](codesMap[winnerCode].addrCount);
 
-            //TODO pre calc this total value.
             uint256 winnerStakeAmountTotal = 0;
             for (uint256 i = 0; i < codesMap[winnerCode].addrCount; i++) {
                 winners[i] = codesMap[winnerCode].codeAddressMap[i];
@@ -330,26 +327,31 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     /// @dev The owner calls this function to set the default POS validator node address for delegation.
     /// @param validator The validator address.
-    function setValidator(address validator) external onlyOwner nonReentrant {
+    function setValidator(address validator)
+        external
+        operatorOnly
+        nonReentrant
+    {
         require(validator != address(0), "INVALID_ADDRESS");
         validatorsInfo.defaultValidator = validator;
     }
 
     /// @dev The owner calls this function to drive the contract to issue a POS delegate refund to the specified validator address.
     /// @param validator The validator address.
-    function runDelegateOut(address validator) external onlyOwner nonReentrant {
+    function runDelegateOut(address validator)
+        external
+        operatorOnly
+        nonReentrant
+    {
         require(validator != address(0), "INVALID_ADDRESS");
-        require(
-            validatorsInfo.validatorsAmountMap[validator] > 0,
-            "NO_SUCH_VALIDATOR"
-        );
+        require(validatorsAmountMap[validator] > 0, "NO_SUCH_VALIDATOR");
         require(
             validatorsInfo.exitingValidator == address(0),
             "THERE_IS_EXITING_VALIDATOR"
         );
         require(delegateOutAmount == 0, "DELEGATE_OUT_AMOUNT_NOT_ZERO");
         validatorsInfo.exitingValidator = validator;
-        delegateOutAmount = validatorsInfo.validatorsAmountMap[validator];
+        delegateOutAmount = validatorsAmountMap[validator];
         require(delegateOut(validator), "DELEGATE_OUT_FAILED");
 
         emit DelegateOut(validator, delegateOutAmount);
@@ -382,23 +384,24 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     }
 
     /// @dev Anyone can call this function to inject a subsidy into the current pool, which is used for the user's refund. It can be returned at any time.
-    /// TODO ADD commit about no smart contract subsidyIn.
+    /// We do not support smart contract subsidyIn for security.
     function subsidyIn() external payable nonReentrant {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
         require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
-        subsidyInfo.subsidyAmountMap[msg.sender] = msg.value;
+        subsidyAmountMap[msg.sender] = subsidyAmountMap[msg.sender].add(
+            msg.value
+        );
         subsidyInfo.total = subsidyInfo.total.add(msg.value);
         poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
     }
 
     /// @dev Apply for subsidy refund function. If the current pool is sufficient for application of subsidy, the refund will be made on the daily settlement.
-    function subsidyOut() external nonReentrant {
+    function subsidyOut(uint256 amount) external nonReentrant {
         require(
-            subsidyInfo.subsidyAmountMap[msg.sender] > 0,
-            "SUBSIDY_AMOUNT_ZERO"
+            subsidyAmountMap[msg.sender] >= amount,
+            "SUBSIDY_AMOUNT_NOT_ENOUGH"
         );
 
-        // TODO add a map to optimize.
         for (
             uint256 i = subsidyInfo.startIndex;
             i < subsidyInfo.startIndex + subsidyInfo.refundingCount;
@@ -413,6 +416,23 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
         subsidyInfo.refundingAddressMap[subsidyInfo.startIndex +
             subsidyInfo.refundingCount] = msg.sender;
         subsidyInfo.refundingCount++;
+
+        subsidyInfo.refundingSubsidyAmountMap[msg.sender] = amount;
+    }
+
+    /// @dev Get a user's codes and amounts;
+    function getStakerCodeList(address staker)
+        external
+        view
+        returns (uint256[] codes, uint256[] amounts)
+    {
+        uint256 cnt = stakerInfoMap[staker].codeCount;
+        codes = new uint256[](cnt);
+        amounts = new uint256[](cnt);
+        for (uint256 i = 0; i < cnt; i++) {
+            codes[i] = stakerInfoMap[staker].codesMap[i];
+            amounts[i] = stakerInfoMap[staker].codesAmountMap[codes[i]];
+        }
     }
 
     /// --------------Private Method--------------------------
@@ -436,26 +456,19 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
         require(codes.length > 0, "INVALID_CODES_LENGTH");
         require(codes.length <= maxCount, "CODES_LENGTH_TOO_LONG");
 
+        uint256 length = codes.length;
+
         //check codes
-        //TODO optimize
-        for (uint256 i = 0; i < codes.length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             require(codes[i] < maxDigital, "OUT_OF_MAX_DIGITAL");
-            for (uint256 m = 0; m < codes.length; m++) {
+            for (uint256 m = 0; m < length; m++) {
                 if (i != m) {
                     require(codes[i] != codes[m], "CODES_MUST_NOT_SAME");
                 }
             }
-        }
 
-        //TODO use map optimize.
-        for (uint256 j = 0; j < pendingStakeOutCount; j++) {
-            for (uint256 n = 0; n < codes.length; n++) {
-                if (
-                    (pendingStakeOutMap[j].staker == msg.sender) &&
-                    (pendingStakeOutMap[j].code == codes[n])
-                ) {
-                    require(false, "STAKER_CODE_IS_EXITING");
-                }
+            if (pendingStakeOutSearchMap[msg.sender][codes[i]] > 0) {
+                require(false, "STAKER_CODE_IS_EXITING");
             }
         }
     }
@@ -501,22 +514,16 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     function removeValidatorMap() private {
         if (validatorsInfo.validatorsCount <= 1) {
             validatorsInfo.validatorsCount = 0;
-            validatorsInfo.validatorsMap[0] = address(0);
+            validatorsMap[0] = address(0);
             return;
         }
 
-        if (
-            validatorsInfo.validatorIndexMap[validatorsInfo.exitingValidator] >
-            0
-        ) {
-            uint256 i = validatorsInfo.validatorIndexMap[validatorsInfo
-                .exitingValidator] - 1;
-            validatorsInfo.validatorIndexMap[validatorsInfo
-                .exitingValidator] = 0;
-            validatorsInfo.validatorsMap[i] = validatorsInfo
-                .validatorsMap[validatorsInfo.validatorsCount - 1];
-            validatorsInfo.validatorsMap[validatorsInfo.validatorsCount -
-                1] = address(0);
+        if (validatorIndexMap[validatorsInfo.exitingValidator] > 0) {
+            uint256 i = validatorIndexMap[validatorsInfo.exitingValidator] - 1;
+            validatorIndexMap[validatorsInfo.exitingValidator] = 0;
+            validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount -
+                1];
+            validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
             validatorsInfo.validatorsCount--;
         }
     }
@@ -539,8 +546,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 poolInfo.delegatePool = poolInfo.delegatePool.sub(
                     delegateOutAmount
                 );
-                validatorsInfo.validatorsAmountMap[validatorsInfo
-                    .exitingValidator] = 0;
+                validatorsAmountMap[validatorsInfo.exitingValidator] = 0;
                 delegateOutAmount = 0;
                 removeValidatorMap();
                 validatorsInfo.exitingValidator = address(0);
@@ -563,7 +569,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 "SUBSIDY_REFUND_ADDRESS_ERROR"
             );
             uint256 singleAmount = subsidyInfo
-                .subsidyAmountMap[refundingAddress];
+                .refundingSubsidyAmountMap[refundingAddress];
 
             if (gasleft() < minGasLeft) {
                 emit GasNotEnough();
@@ -571,7 +577,8 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
             }
 
             if (poolInfo.demandDepositPool >= singleAmount) {
-                subsidyInfo.subsidyAmountMap[refundingAddress] = 0;
+                subsidyAmountMap[refundingAddress] = subsidyAmountMap[refundingAddress]
+                    .sub(singleAmount);
                 subsidyInfo.refundingAddressMap[i] = address(0);
                 subsidyInfo.refundingCount--;
                 subsidyInfo.startIndex++;
@@ -606,6 +613,8 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
             if (stakeOutAddress(codes, pendingStakeOutMap[i].staker)) {
                 pendingStakeOutStartIndex++;
                 pendingStakeOutCount--;
+                pendingStakeOutSearchMap[pendingStakeOutMap[i]
+                    .staker][pendingStakeOutMap[i].code] = 0;
             } else {
                 return false;
             }

@@ -25,9 +25,6 @@ contract Types {
         address defaultValidator;
         address exitingValidator;
         uint256 validatorsCount;
-        mapping(uint256 => address) validatorsMap;
-        mapping(address => uint256) validatorIndexMap;
-        mapping(address => uint256) validatorsAmountMap;
     }
 
     struct PoolInfo {
@@ -42,7 +39,7 @@ contract Types {
         uint256 startIndex;
         uint256 refundingCount;
         mapping(uint256 => address) refundingAddressMap;
-        mapping(address => uint256) subsidyAmountMap;
+        mapping(address => uint256) refundingSubsidyAmountMap;
     }
 
     event StakeIn(

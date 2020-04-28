@@ -21,6 +21,7 @@ contract('JacksPot', accounts => {
 
     let balance0 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
     let res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000, gasPrice });
+    console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
     let balance1 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
     let value = new BigNumber(stake * 2);
@@ -33,6 +34,7 @@ contract('JacksPot', accounts => {
     assert.equal(balance, stake * 2);
 
     res = await jackpot.methods.stakeIn([3333, 1234, 0], [stake, stake, stake]).send({ from: accounts[0], value: stake * 3, gas: 10000000 });
+    console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     balance = await getWeb3().eth.getBalance(jackpot._address);
@@ -41,9 +43,11 @@ contract('JacksPot', accounts => {
     // assert.equal(res.events.StakeIn.returnValues.codes.toString(), [3333, 1234, 0].toString());
 
     res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
+    console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[accounts.length - 1], value: stake * 2, gas: 10000000 });
+    console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     let codes = [];
@@ -426,7 +430,7 @@ contract('JacksPot', accounts => {
     // console.log(JSON.stringify(res, null, 4));
   });
 
-  it('should failed setValidator for non-owner', async () => {
+  it('should failed setValidator for non-operator', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
       await jackpot.methods.setValidator('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d').send({ from: accounts[1], value: 0, gas: 10000000 });
@@ -436,19 +440,23 @@ contract('JacksPot', accounts => {
     }
   });
 
-  it('should failed setValidator 0 for owner', async () => {
+  it('should failed setValidator 0 for operator', async () => {
     let jackpot = (await getContracts()).jackpot;
+    let res = await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], value: 0, gas: 10000000 });
+
     try {
-      await jackpot.methods.setValidator('0x0000000000000000000000000000000000000000').send({ from: accounts[0], value: 0, gas: 10000000 });
+      await jackpot.methods.setValidator('0x0000000000000000000000000000000000000000').send({ from: accounts[1], value: 0, gas: 10000000 });
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
     }
   });
 
-  it('should success setValidator for owner', async () => {
+  it('should success setValidator for operator', async () => {
     let jackpot = (await getContracts()).jackpot;
-    await jackpot.methods.setValidator('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d').send({ from: accounts[0], value: 0, gas: 10000000 });
+    let res = await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], value: 0, gas: 10000000 });
+
+    await jackpot.methods.setValidator('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d').send({ from: accounts[1], value: 0, gas: 10000000 });
 
     let ret = await jackpot.methods.validatorsInfo().call();
     assert.equal('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d', ret.defaultValidator.toLowerCase());
@@ -562,7 +570,7 @@ contract('JacksPot', accounts => {
   it('should success runDelegateIn for operator', async () => {
     let jackpot = (await getContracts()).jackpot;
     await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], value: 0, gas: 10000000 });
-    await jackpot.methods.setValidator('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d').send({ from: accounts[0], value: 0, gas: 10000000 });
+    await jackpot.methods.setValidator('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d').send({ from: accounts[1], value: 0, gas: 10000000 });
     let res = await jackpot.methods.stakeIn([0], [stake]).send({ from: accounts[2], value: stake, gas: 10000000 });
     // console.log(res.gasUsed);
     let ret = await jackpot.methods.runDelegateIn().send({ from: accounts[1], value: 0, gas: 10000000 });
@@ -630,7 +638,7 @@ contract('JacksPot', accounts => {
   it('should failed subsidyOut non-in', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
-      await jackpot.methods.subsidyOut().send({ from: accounts[0], value: 0, gas: 10000000 });
+      await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
@@ -640,7 +648,7 @@ contract('JacksPot', accounts => {
   it('should success subsidyOut with subsidyIn >= 10', async () => {
     let jackpot = (await getContracts()).jackpot;
     await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake, gas: 10000000 });
-    await jackpot.methods.subsidyOut().send({ from: accounts[0], value: 0, gas: 10000000 });
+    await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
     let ret = await jackpot.methods.subsidyInfo().call();
     assert.equal(ret.total, stake.toString());
     assert.equal(ret.refundingCount, 1);
@@ -653,12 +661,12 @@ contract('JacksPot', accounts => {
   it('should failed subsidyOut again', async () => {
     let jackpot = (await getContracts()).jackpot;
     await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake, gas: 10000000 });
-    await jackpot.methods.subsidyOut().send({ from: accounts[0], value: 0, gas: 10000000 });
+    await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
     let ret = await jackpot.methods.subsidyInfo().call();
     assert.equal(ret.total, stake.toString());
     assert.equal(ret.refundingCount, 1);
     try {
-      await jackpot.methods.subsidyOut().send({ from: accounts[0], value: 0, gas: 10000000 });
+      await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
