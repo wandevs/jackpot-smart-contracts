@@ -14,7 +14,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     uint256 public constant DIVISOR = 1000;
 
-    uint256 maxCount = 100;
+    uint256 maxCount = 50;
 
     uint256 minAmount = 10 ether;
 
@@ -26,15 +26,18 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     mapping(uint256 => CodeInfo) public codesMap;
 
+    //------Data for pending stake out-----------------------
     uint256 public pendingStakeOutStartIndex;
     uint256 public pendingStakeOutCount;
     mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
     mapping(address => mapping(uint256 => uint256)) public pendingStakeOutSearchMap;
 
+    //------Data for pending prize out-----------------------
     uint256 public pendingPrizeWithdrawStartIndex;
     uint256 public pendingPrizeWithdrawCount;
     mapping(uint256 => address) public pendingPrizeWithdrawMap;
 
+    //------Data for validator info-----------------------
     ValidatorsInfo public validatorsInfo;
     mapping(uint256 => address) public validatorsMap;
     mapping(address => uint256) public validatorIndexMap;

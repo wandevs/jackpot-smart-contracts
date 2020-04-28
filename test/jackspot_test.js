@@ -158,10 +158,11 @@ contract('JacksPot', accounts => {
   it('stakeIn failed when amount length > 50', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
-      let codes = [1];
-      let amounts = [web3.utils.toWei('1')];
+      let codes = [];
+      let amounts = [];
       for (let i = 0; i < 51; i++) {
         amounts.push(stake);
+        codes.push(i);
       }
       await jackpot.methods.stakeIn(codes, amounts).send({ from: accounts[0], value: stake * 51, gas: 10000000 });
       assert(false, 'Should never get here');
@@ -173,9 +174,10 @@ contract('JacksPot', accounts => {
   it('stakeIn failed when codes length > 50', async () => {
     let jackpot = (await getContracts()).jackpot;
     try {
-      let codes = [1];
-      let amounts = [web3.utils.toWei('1')];
+      let codes = [];
+      let amounts = [];
       for (let i = 0; i < 51; i++) {
+        amounts.push(stake);
         codes.push(i);
       }
       await jackpot.methods.stakeIn(codes, amounts).send({ from: accounts[0], value: stake * 51, gas: 10000000 });
