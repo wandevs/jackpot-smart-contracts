@@ -2,7 +2,8 @@
   "scripts": {
     "test": "truffle test",
     "compile": "truffle compile",
-    "coverage": "truffle run coverage"
+    "coverage": "truffle run coverage",
+    "migrate": "rm -rf build && truffle migrate --network testnet"
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",

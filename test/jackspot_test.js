@@ -459,7 +459,7 @@ contract('JacksPot', accounts => {
     await jackpot.methods.setValidator('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d').send({ from: accounts[1], value: 0, gas: 10000000 });
 
     let ret = await jackpot.methods.validatorsInfo().call();
-    assert.equal('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d', ret.defaultValidator.toLowerCase());
+    assert.equal('0xa4626e2bb450204c4b34bcc7525e585e8f678c0d', ret.currentValidator.toLowerCase());
   });
 
   it('should failed setFeeRate for non-owner', async () => {

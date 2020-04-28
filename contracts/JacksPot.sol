@@ -36,9 +36,9 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     mapping(uint256 => address) public pendingPrizeWithdrawMap;
 
     ValidatorsInfo public validatorsInfo;
-    mapping(uint256 => address) validatorsMap;
-    mapping(address => uint256) validatorIndexMap;
-    mapping(address => uint256) validatorsAmountMap;
+    mapping(uint256 => address) public validatorsMap;
+    mapping(address => uint256) public validatorIndexMap;
+    mapping(address => uint256) public validatorsAmountMap;
 
     uint256 public delegateOutAmount;
 
@@ -46,7 +46,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     SubsidyInfo public subsidyInfo;
 
-    mapping(address => uint256) subsidyAmountMap;
+    mapping(address => uint256) public subsidyAmountMap;
 
     uint256 public feeRate;
 
@@ -80,7 +80,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     /// @dev The operating contract accepts general transfer, and the transferred funds directly enter the prize pool.
     function() public payable nonReentrant {}
 
-    /// @dev User betting function.
+    /// @dev User betting function. We do not support smart contract call for security.(DoS with revert)
     /// @param codes An array that can contain Numbers selected by the user.
     /// @param amounts An array that can contain the user's bet amount on each number, with a minimum of 10 wan.
     function stakeIn(uint256[] codes, uint256[] amounts)
@@ -193,11 +193,11 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     /// @dev After the settlement is completed, the settlement robot will call this function to conduct POS delegation to the funds in the capital pool that meet the proportion of the commission.
     function runDelegateIn() external operatorOnly nonReentrant returns (bool) {
         require(
-            validatorsInfo.defaultValidator != address(0),
+            validatorsInfo.currentValidator != address(0),
             "NO_DEFAULT_VALIDATOR"
         );
 
-        address defaultValidator = validatorsInfo.defaultValidator;
+        address currentValidator = validatorsInfo.currentValidator;
 
         uint256 total = poolInfo
             .delegatePool
@@ -216,25 +216,25 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 .sub(demandDepositAmount);
 
             if (
-                (validatorIndexMap[defaultValidator] == 0) &&
+                (validatorIndexMap[currentValidator] == 0) &&
                 (delegateAmount < firstDelegateMinValue)
             ) {
-                emit DelegateIn(validatorsInfo.defaultValidator, 0);
+                emit DelegateIn(validatorsInfo.currentValidator, 0);
                 return false;
             }
 
             require(
-                delegateIn(defaultValidator, delegateAmount),
+                delegateIn(currentValidator, delegateAmount),
                 "DELEGATE_IN_FAILED"
             );
 
-            validatorsAmountMap[defaultValidator] = validatorsAmountMap[defaultValidator]
+            validatorsAmountMap[currentValidator] = validatorsAmountMap[currentValidator]
                 .add(delegateAmount);
-            if (validatorIndexMap[defaultValidator] == 0) {
+            if (validatorIndexMap[currentValidator] == 0) {
                 validatorsMap[validatorsInfo
-                    .validatorsCount] = defaultValidator;
+                    .validatorsCount] = currentValidator;
                 validatorsInfo.validatorsCount++;
-                validatorIndexMap[defaultValidator] = validatorsInfo
+                validatorIndexMap[currentValidator] = validatorsInfo
                     .validatorsCount;
             }
 
@@ -242,7 +242,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
             poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                 delegateAmount
             );
-            emit DelegateIn(validatorsInfo.defaultValidator, delegateAmount);
+            emit DelegateIn(validatorsInfo.currentValidator, delegateAmount);
             return;
         }
     }
@@ -333,7 +333,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
         nonReentrant
     {
         require(validator != address(0), "INVALID_ADDRESS");
-        validatorsInfo.defaultValidator = validator;
+        validatorsInfo.currentValidator = validator;
     }
 
     /// @dev The owner calls this function to drive the contract to issue a POS delegate refund to the specified validator address.
@@ -346,11 +346,11 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
         require(validator != address(0), "INVALID_ADDRESS");
         require(validatorsAmountMap[validator] > 0, "NO_SUCH_VALIDATOR");
         require(
-            validatorsInfo.exitingValidator == address(0),
+            validatorsInfo.withdrawFromValidator == address(0),
             "THERE_IS_EXITING_VALIDATOR"
         );
         require(delegateOutAmount == 0, "DELEGATE_OUT_AMOUNT_NOT_ZERO");
-        validatorsInfo.exitingValidator = validator;
+        validatorsInfo.withdrawFromValidator = validator;
         delegateOutAmount = validatorsAmountMap[validator];
         require(delegateOut(validator), "DELEGATE_OUT_FAILED");
 
@@ -384,7 +384,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     }
 
     /// @dev Anyone can call this function to inject a subsidy into the current pool, which is used for the user's refund. It can be returned at any time.
-    /// We do not support smart contract subsidyIn for security.
+    /// We do not support smart contract call for security.(DoS with revert)
     function subsidyIn() external payable nonReentrant {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
         require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
@@ -518,9 +518,9 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
             return;
         }
 
-        if (validatorIndexMap[validatorsInfo.exitingValidator] > 0) {
-            uint256 i = validatorIndexMap[validatorsInfo.exitingValidator] - 1;
-            validatorIndexMap[validatorsInfo.exitingValidator] = 0;
+        if (validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0) {
+            uint256 i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
+            validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
             validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount -
                 1];
             validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
@@ -546,10 +546,10 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 poolInfo.delegatePool = poolInfo.delegatePool.sub(
                     delegateOutAmount
                 );
-                validatorsAmountMap[validatorsInfo.exitingValidator] = 0;
+                validatorsAmountMap[validatorsInfo.withdrawFromValidator] = 0;
                 delegateOutAmount = 0;
                 removeValidatorMap();
-                validatorsInfo.exitingValidator = address(0);
+                validatorsInfo.withdrawFromValidator = address(0);
             } else {
                 poolInfo.prizePool = address(this).balance.sub(
                     poolInfo.demandDepositPool

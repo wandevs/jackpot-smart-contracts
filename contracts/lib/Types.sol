@@ -22,8 +22,8 @@ contract Types {
     }
 
     struct ValidatorsInfo {
-        address defaultValidator;
-        address exitingValidator;
+        address currentValidator;
+        address withdrawFromValidator;
         uint256 validatorsCount;
     }
 
