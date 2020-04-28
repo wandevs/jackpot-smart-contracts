@@ -20,6 +20,8 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     uint256 minGasLeft = 20000;
 
+    uint256 firstDelegateMinValue = 100 ether;
+
     mapping(address => StakerInfo) public stakerInfoMap;
 
     uint256 public pendingStakeOutStartIndex;
@@ -106,7 +108,9 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                     .codeCount] = codes[i];
 
                 stakerInfoMap[msg.sender].codeCount++;
-                stakerInfoMap[msg.sender].codesIndexMap[codes[i]] = stakerInfoMap[msg.sender].codeCount;
+                stakerInfoMap[msg.sender]
+                    .codesIndexMap[codes[i]] = stakerInfoMap[msg.sender]
+                    .codeCount;
             }
 
             //Save code info
@@ -114,7 +118,8 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 codesMap[codes[i]].codeAddressMap[codesMap[codes[i]]
                     .addrCount] = msg.sender;
                 codesMap[codes[i]].addrCount++;
-                codesMap[codes[i]].addressIndexMap[msg.sender] = codesMap[codes[i]].addrCount;
+                codesMap[codes[i]].addressIndexMap[msg
+                    .sender] = codesMap[codes[i]].addrCount;
             }
         }
 
@@ -185,7 +190,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
     }
 
     /// @dev After the settlement is completed, the settlement robot will call this function to conduct POS delegation to the funds in the capital pool that meet the proportion of the commission.
-    function runDelegateIn() external operatorOnly nonReentrant {
+    function runDelegateIn() external operatorOnly nonReentrant returns (bool) {
         require(
             validatorsInfo.defaultValidator != address(0),
             "NO_DEFAULT_VALIDATOR"
@@ -208,6 +213,15 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 .demandDepositPool
                 .sub(subsidyInfo.total)
                 .sub(demandDepositAmount);
+
+            if (
+                (validatorsInfo.validatorIndexMap[defaultValidator] == 0) &&
+                (delegateAmount < firstDelegateMinValue)
+            ) {
+                emit DelegateIn(validatorsInfo.defaultValidator, 0);
+                return false;
+            }
+
             require(
                 delegateIn(defaultValidator, delegateAmount),
                 "DELEGATE_IN_FAILED"
@@ -221,7 +235,9 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 validatorsInfo.validatorsMap[validatorsInfo
                     .validatorsCount] = defaultValidator;
                 validatorsInfo.validatorsCount++;
-                validatorsInfo.validatorIndexMap[defaultValidator] = validatorsInfo.validatorsCount;
+                validatorsInfo
+                    .validatorIndexMap[defaultValidator] = validatorsInfo
+                    .validatorsCount;
             }
 
             poolInfo.delegatePool = poolInfo.delegatePool.add(delegateAmount);
@@ -229,6 +245,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
                 delegateAmount
             );
             emit DelegateIn(validatorsInfo.defaultValidator, delegateAmount);
+            return;
         }
     }
 
@@ -489,7 +506,8 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
         }
 
         if (
-            validatorsInfo.validatorIndexMap[validatorsInfo.exitingValidator] > 0
+            validatorsInfo.validatorIndexMap[validatorsInfo.exitingValidator] >
+            0
         ) {
             uint256 i = validatorsInfo.validatorIndexMap[validatorsInfo
                 .exitingValidator] - 1;
