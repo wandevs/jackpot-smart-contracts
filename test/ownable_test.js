@@ -8,14 +8,14 @@ contract('Ownable', accounts => {
   });
 
   it('should return true when caller is owner', async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     const isOwner = await jackpot.methods.isOwner().call({ from: accounts[0] });
     assert.equal(true, isOwner);
   });
 
   it('should return owner', async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     let owner = await jackpot.methods.owner().call({ from: accounts[0] });
     assert.equal(accounts[0].toLowerCase(), owner.toLowerCase());
@@ -26,14 +26,14 @@ contract('Ownable', accounts => {
   });
 
   it("should return false when caller isn't owner", async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     const isOwner = await jackpot.methods.isOwner().call({ from: accounts[2] });
     assert.equal(false, isOwner);
   });
 
   it('should transfer ownership', async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     await jackpot.methods.transferOwnership(accounts[3]).send({ from: accounts[0] });
     let isOwner = await jackpot.methods.isOwner().call({ from: accounts[3] });
@@ -45,7 +45,7 @@ contract('Ownable', accounts => {
   });
 
   it("can't transfer ownership to empty address", async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     try {
       await jackpot.methods
@@ -60,7 +60,7 @@ contract('Ownable', accounts => {
   });
 
   it("can't transfer ownership if not owner", async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     try {
       await jackpot.methods.transferOwnership(accounts[3]).send({ from: accounts[3] });
@@ -73,7 +73,7 @@ contract('Ownable', accounts => {
   });
 
   it('should have no owner after renouncing', async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
     let owner = await jackpot.methods.owner().call({ from: accounts[0] });
     await jackpot.methods.renounceOwnership().send({ from: accounts[0] });
     owner = await jackpot.methods.owner().call({ from: accounts[0] });
@@ -81,7 +81,7 @@ contract('Ownable', accounts => {
   });
 
   it('should revert when trying to renounce but not owner', async () => {
-    const jackpot = (await getContracts()).jackpot;
+    const jackpot = (await getContracts(accounts)).jackpot;
 
     try {
       await jackpot.methods.renounceOwnership().send({ from: accounts[1] });

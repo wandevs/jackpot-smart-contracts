@@ -1,5 +1,7 @@
 const Web3 = require('web3');
-const JacksPot = artifacts.require('./JacksPot.sol');
+const JacksPotDelegate = artifacts.require('./JacksPotDelegate.sol');
+const JacksPotProxy = artifacts.require('./JacksPotProxy.sol');
+
 const BigNumber = require('bignumber.js');
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
@@ -16,19 +18,23 @@ const newContract = async (contract, ...args) => {
     return instance;
 };
 
-const newContractAt = (contract, address) => {
+const getContractAt = (contract, address) => {
     const w = getWeb3();
     const instance = new w.eth.Contract(contract.abi, address);
     return instance;
 };
 
-const getJackPotAt = (address) => {
-    const jackpot = newContractAt(JacksPot, address);
-    return jackpot;
-}
+const getContracts = async (accounts) => {
+    const jackpotDelegate = await newContract(JacksPotDelegate);
+    
+    const jackpotProxy = await newContract(JacksPotProxy);
 
-const getContracts = async () => {
-    const jackpot = await newContract(JacksPot);
+    await jackpotProxy.methods.upgradeTo(jackpotDelegate._address).send({ from: accounts[0], gas: 10000000 });
+
+    const jackpot = await getContractAt(JacksPotDelegate, jackpotProxy._address);
+
+    await jackpot.methods.init().send({ from: accounts[0], gas: 10000000 });
+
     return {
         jackpot
     };
@@ -39,8 +45,6 @@ const clone = x => JSON.parse(JSON.stringify(x));
 module.exports = {
     getWeb3,
     newContract,
-    newContractAt,
     getContracts,
-    getJackPotAt,
     clone,
 };

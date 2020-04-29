@@ -3,63 +3,13 @@ pragma solidity 0.4.26;
 import "./lib/SafeMath.sol";
 import "./lib/LibOwnable.sol";
 import "./lib/PosHelper.sol";
-import "./lib/Types.sol";
+import "./JacksPotStorage.sol";
 import "./lib/ReentrancyGuard.sol";
 
 
 /// @title Jack's Pot Smart Contract
 /// @dev Jack’s Pot is a no-loss lottery game built on Wanchain
-contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
-    using SafeMath for uint256;
-
-    uint256 public constant DIVISOR = 1000;
-
-    uint256 maxCount = 50;
-
-    uint256 minAmount = 10 ether;
-
-    uint256 minGasLeft = 20000;
-
-    uint256 firstDelegateMinValue = 100 ether;
-
-    mapping(address => StakerInfo) public stakerInfoMap;
-
-    mapping(uint256 => CodeInfo) public codesMap;
-
-    //------Data for pending stake out-----------------------
-    uint256 public pendingStakeOutStartIndex;
-    uint256 public pendingStakeOutCount;
-    mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
-    mapping(address => mapping(uint256 => uint256)) public pendingStakeOutSearchMap;
-
-    //------Data for pending prize out-----------------------
-    uint256 public pendingPrizeWithdrawStartIndex;
-    uint256 public pendingPrizeWithdrawCount;
-    mapping(uint256 => address) public pendingPrizeWithdrawMap;
-
-    //------Data for validator info-----------------------
-    ValidatorsInfo public validatorsInfo;
-    mapping(uint256 => address) public validatorsMap;
-    mapping(address => uint256) public validatorIndexMap;
-    mapping(address => uint256) public validatorsAmountMap;
-
-    uint256 public delegateOutAmount;
-
-    PoolInfo public poolInfo;
-
-    SubsidyInfo public subsidyInfo;
-
-    mapping(address => uint256) public subsidyAmountMap;
-
-    uint256 public feeRate;
-
-    address public operator;
-
-    bool public closed;
-
-    uint256 public maxDigital;
-
-    uint256 public currentRandom;
+contract JacksPotDelegate is PosHelper, JacksPotStorage, ReentrancyGuard {
 
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
@@ -73,15 +23,17 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
     /// --------------Public Method--------------------------
 
-    constructor() public {
+    /// @dev The operating contract accepts general transfer, and the transferred funds directly enter the prize pool.
+    function() public payable nonReentrant {}
+
+    /// @dev This function will set default value.
+    function init() public onlyOwner {
         poolInfo.delegatePercent = 700; // 70%
         maxDigital = 10000; // 0000~9999
         closed = false;
         feeRate = 0;
     }
 
-    /// @dev The operating contract accepts general transfer, and the transferred funds directly enter the prize pool.
-    function() public payable nonReentrant {}
 
     /// @dev User betting function. We do not support smart contract call for security.(DoS with revert)
     /// @param codes An array that can contain Numbers selected by the user.
@@ -132,7 +84,7 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
 
         poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
 
-        emit StakeIn(msg.sender, msg.value);
+        emit StakeIn(msg.sender, msg.value, codes, amounts);
     }
 
     /// @dev This is the user refund function, where users can apply to withdraw funds invested on certain Numbers.
@@ -336,6 +288,9 @@ contract JacksPot is LibOwnable, PosHelper, Types, ReentrancyGuard {
         nonReentrant
     {
         require(validator != address(0), "INVALID_ADDRESS");
+        require(validator != validatorsInfo.currentValidator, "VALIDATOR_SAME_WITH_CURRENT");
+        require(validator != validatorsInfo.withdrawFromValidator, "VALIDATOR_IS_WITHDRAWING");
+
         validatorsInfo.currentValidator = validator;
     }
 

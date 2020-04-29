@@ -44,7 +44,9 @@ contract Types {
 
     event StakeIn(
         address indexed staker,
-        uint256 stakeAmount
+        uint256 stakeAmount,
+        uint256[] codes,
+        uint256[] amounts
     );
 
     event StakeOut(
