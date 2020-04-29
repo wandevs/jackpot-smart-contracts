@@ -33,8 +33,10 @@ contract('JacksPot', accounts => {
     let balance = await getWeb3().eth.getBalance(jackpot._address);
     assert.equal(balance, stake * 2);
 
-    res = await jackpot.methods.stakeIn([3333, 1234, 0], [stake, stake, stake]).send({ from: accounts[0], value: stake * 3, gas: 10000000 });
-    console.log('events:', res.events);
+    res = await (jackpot.methods.stakeIn([3333, 1234, 0], [stake, stake, stake]).send({ from: accounts[0], value: stake * 3, gas: 10000000 }));
+    // res = await debug(jackpot.methods.stakeIn([3333, 1234, 0], [stake, stake, stake], { from: accounts[0], value: stake * 3, gas: 10000000 }));
+
+    console.log('events:', res.events, res);
     console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
@@ -57,7 +59,7 @@ contract('JacksPot', accounts => {
 
     let codes = [];
     let amounts = [];
-    let cnt = 1;
+    let cnt = 50;
     for (let i = 0; i < cnt; i++) {
       amounts.push(stake);
       codes.push(i);
@@ -83,8 +85,6 @@ contract('JacksPot', accounts => {
     // console.log(web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[0])));
     assert.equal(ret.codeCount, '4');
   });
-
-  return;
 
   it('stakeIn failed when codes and amount length not match', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;

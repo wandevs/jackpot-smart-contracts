@@ -3,8 +3,9 @@ pragma solidity 0.4.26;
 import "./lib/Proxy.sol";
 import "./JacksPotStorage.sol";
 import "./lib/LibOwnable.sol";
+import "./lib/ReentrancyGuard.sol";
 
-contract JacksPotProxy is JacksPotStorage, Proxy {
+contract JacksPotProxy is JacksPotStorage, ReentrancyGuard, Proxy {
     /**
     *
     * MANIPULATIONS

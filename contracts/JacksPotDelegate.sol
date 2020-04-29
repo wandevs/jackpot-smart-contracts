@@ -9,7 +9,7 @@ import "./lib/ReentrancyGuard.sol";
 
 /// @title Jack's Pot Smart Contract
 /// @dev Jack’s Pot is a no-loss lottery game built on Wanchain
-contract JacksPotDelegate is PosHelper, JacksPotStorage, ReentrancyGuard {
+contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
