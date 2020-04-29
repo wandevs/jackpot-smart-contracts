@@ -21,7 +21,7 @@ contract('JacksPot', accounts => {
     let balance0 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
     let res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000, gasPrice });
     console.log('gasUsed:', res.gasUsed);
-    console.log(res.events.StakeIn.returnValues, await jackpot.methods.stakerInfoMap(accounts[0]).call());
+    // console.log(res.events.StakeIn.returnValues, await jackpot.methods.stakerInfoMap(accounts[0]).call());
     assert.equal(res.status, true);
     let balance1 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
     let value = new BigNumber(stake * 2);
@@ -36,7 +36,7 @@ contract('JacksPot', accounts => {
     res = await (jackpot.methods.stakeIn([3333, 1234, 0], [stake, stake, stake]).send({ from: accounts[0], value: stake * 3, gas: 10000000 }));
     // res = await debug(jackpot.methods.stakeIn([3333, 1234, 0], [stake, stake, stake], { from: accounts[0], value: stake * 3, gas: 10000000 }));
 
-    console.log('events:', res.events, res);
+    // console.log('events:', res.events);
     console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
@@ -46,13 +46,13 @@ contract('JacksPot', accounts => {
     // assert.equal(res.events.StakeIn.returnValues.codes.toString(), [3333, 1234, 0].toString());
 
     res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
-    console.log('events:', res.events);
+    // console.log('events:', res.events);
 
     console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     res = await jackpot.methods.stakeIn([1111, 2222], [stake, stake]).send({ from: accounts[accounts.length - 1], value: stake * 2, gas: 10000000 });
-    console.log('events:', res.events);
+    // console.log('events:', res.events);
 
     console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
@@ -66,7 +66,7 @@ contract('JacksPot', accounts => {
     }
     res = await jackpot.methods.stakeIn(codes, amounts).send({ from: accounts[0], value: stake * cnt, gas: 10000000 });
     console.log('gasUsed:', res.gasUsed);
-    console.log('events:', res.events);
+    // console.log('events:', res.events);
     // assert.equal(res.events.PoolUpdate.returnValues.demandDepositPool, web3.utils.toWei('590').toString());
 
     let ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
@@ -77,7 +77,7 @@ contract('JacksPot', accounts => {
     assert.equal(ret, '2');
 
     res = await jackpot.methods.stakeOut(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
-    console.log('events:', res.events);
+    // console.log('events:', res.events);
 
     console.log('gasUsed:', res.gasUsed);
     ret = await jackpot.methods.stakerInfoMap(accounts[0]).call();
