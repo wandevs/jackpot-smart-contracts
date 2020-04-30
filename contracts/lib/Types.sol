@@ -5,9 +5,9 @@ contract Types {
     struct UserInfo {
         uint256 prize;
         uint256 codeCount;
-        mapping(uint256 => uint256) codesMap;
-        mapping(uint256 => uint256) codesIndexMap;
-        mapping(uint256 => uint256) codesAmountMap;
+        mapping(uint256 => uint256) codesMap;           // map: index => userCode (index start from 0)
+        mapping(uint256 => uint256) codesIndexMap;      // map: userCode => index
+        mapping(uint256 => uint256) codesAmountMap;     // map: userCode => amount
     }
 
     struct PendingRedeem {
@@ -17,8 +17,8 @@ contract Types {
 
     struct CodeInfo {
         uint256 addrCount;
-        mapping(uint256 => address) codeAddressMap;
-        mapping(address => uint256) addressIndexMap;
+        mapping(uint256 => address) codeAddressMap;     // map: index => userAddress (index start from 0)
+        mapping(address => uint256) addressIndexMap;    // map: userAddress => index
     }
 
     struct ValidatorsInfo {
@@ -38,8 +38,8 @@ contract Types {
         uint256 total;
         uint256 startIndex;
         uint256 refundingCount;
-        mapping(uint256 => address) refundingAddressMap;
-        mapping(address => uint256) refundingSubsidyAmountMap;
+        mapping(uint256 => address) refundingAddressMap;        //map: index => address (index start from startIndex)
+        mapping(address => uint256) refundingSubsidyAmountMap;  //map: address => amount
     }
 
     event Buy(
@@ -49,18 +49,11 @@ contract Types {
         uint256[] amounts
     );
 
-    event Redeem(
-        address indexed user,
-        bool indexed success,
-        uint256[] codes
-    );
+    event Redeem(address indexed user, bool indexed success, uint256[] codes);
 
     event GasNotEnough();
 
-    event PrizeWithdraw(
-        address indexed user,
-        bool indexed success
-    );
+    event PrizeWithdraw(address indexed user, bool indexed success);
 
     event UpdateSuccess();
 
