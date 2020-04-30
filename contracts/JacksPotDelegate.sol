@@ -38,13 +38,13 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     /// @dev User betting function. We do not support smart contract call for security.(DoS with revert)
     /// @param codes An array that can contain Numbers selected by the user.
     /// @param amounts An array that can contain the user's bet amount on each number, with a minimum of 10 wan.
-    function stakeIn(uint256[] codes, uint256[] amounts)
+    function buy(uint256[] codes, uint256[] amounts)
         external
         payable
         notClosed
         nonReentrant
     {
-        checkStakeInValue(codes, amounts);
+        checkBuyValue(codes, amounts);
         uint256 totalAmount = 0;
 
         for (uint256 i = 0; i < codes.length; i++) {
@@ -54,19 +54,19 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             totalAmount = totalAmount.add(amounts[i]);
 
             //Save stake info
-            if (stakerInfoMap[msg.sender].codesAmountMap[codes[i]] > 0) {
-                stakerInfoMap[msg.sender]
-                    .codesAmountMap[codes[i]] = stakerInfoMap[msg.sender]
+            if (userInfoMap[msg.sender].codesAmountMap[codes[i]] > 0) {
+                userInfoMap[msg.sender]
+                    .codesAmountMap[codes[i]] = userInfoMap[msg.sender]
                     .codesAmountMap[codes[i]]
                     .add(amounts[i]);
             } else {
-                stakerInfoMap[msg.sender].codesAmountMap[codes[i]] = amounts[i];
-                stakerInfoMap[msg.sender].codesMap[stakerInfoMap[msg.sender]
+                userInfoMap[msg.sender].codesAmountMap[codes[i]] = amounts[i];
+                userInfoMap[msg.sender].codesMap[userInfoMap[msg.sender]
                     .codeCount] = codes[i];
 
-                stakerInfoMap[msg.sender].codeCount++;
-                stakerInfoMap[msg.sender]
-                    .codesIndexMap[codes[i]] = stakerInfoMap[msg.sender]
+                userInfoMap[msg.sender].codeCount++;
+                userInfoMap[msg.sender]
+                    .codesIndexMap[codes[i]] = userInfoMap[msg.sender]
                     .codeCount;
             }
 
@@ -84,38 +84,38 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
 
-        emit StakeIn(msg.sender, msg.value, codes, amounts);
+        emit Buy(msg.sender, msg.value, codes, amounts);
     }
 
     /// @dev This is the user refund function, where users can apply to withdraw funds invested on certain Numbers.
     /// @param codes The array contains the number the user wants a refund from.
-    function stakeOut(uint256[] codes)
+    function redeem(uint256[] codes)
         external
         notClosed
         nonReentrant
         returns (bool)
     {
-        checkStakeOutValue(codes);
+        checkRedeemValue(codes);
 
-        if (stakeOutAddress(codes, msg.sender)) {
-            emit StakeOut(msg.sender, true, codes);
+        if (redeemAddress(codes, msg.sender)) {
+            emit Redeem(msg.sender, true, codes);
             return true;
         } else {
             for (uint256 n = 0; n < codes.length; n++) {
-                pendingStakeOutMap[pendingStakeOutCount].staker = msg.sender;
-                pendingStakeOutMap[pendingStakeOutCount].code = codes[n];
-                pendingStakeOutCount++;
-                pendingStakeOutSearchMap[msg.sender][codes[n]] = 1;
+                pendingRedeemMap[pendingRedeemCount].user = msg.sender;
+                pendingRedeemMap[pendingRedeemCount].code = codes[n];
+                pendingRedeemCount++;
+                pendingRedeemSearchMap[msg.sender][codes[n]] = 1;
             }
 
-            emit StakeOut(msg.sender, false, codes);
+            emit Redeem(msg.sender, false, codes);
             return false;
         }
     }
 
     /// @dev This is the user refund function, where users can apply to withdraw prize.
     function prizeWithdraw() external notClosed nonReentrant returns (bool) {
-        require(stakerInfoMap[msg.sender].prize > 0, "NO_PRIZE_TO_WITHDRAW");
+        require(userInfoMap[msg.sender].prize > 0, "NO_PRIZE_TO_WITHDRAW");
         if (prizeWithdrawAddress(msg.sender)) {
             emit PrizeWithdraw(msg.sender, true);
             return true;
@@ -138,7 +138,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         if (subsidyRefund()) {
             if (prizeWithdrawPendingRefund()) {
-                if (stakeOutPendingRefund()) {
+                if (redeemPendingRefund()) {
                     emit UpdateSuccess();
                 }
             }
@@ -239,15 +239,15 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             for (uint256 i = 0; i < codesMap[winnerCode].addrCount; i++) {
                 winners[i] = codesMap[winnerCode].codeAddressMap[i];
                 winnerStakeAmountTotal = winnerStakeAmountTotal.add(
-                    stakerInfoMap[winners[i]].codesAmountMap[winnerCode]
+                    userInfoMap[winners[i]].codesAmountMap[winnerCode]
                 );
             }
 
             for (uint256 j = 0; j < codesMap[winnerCode].addrCount; j++) {
                 amounts[j] = prizePool
-                    .mul(stakerInfoMap[winners[j]].codesAmountMap[winnerCode])
+                    .mul(userInfoMap[winners[j]].codesAmountMap[winnerCode])
                     .div(winnerStakeAmountTotal);
-                stakerInfoMap[winners[j]].prize = stakerInfoMap[winners[j]]
+                userInfoMap[winners[j]].prize = userInfoMap[winners[j]]
                     .prize
                     .add(amounts[j]);
             }
@@ -379,23 +379,23 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev Get a user's codes and amounts;
-    function getStakerCodeList(address staker)
+    function getUserCodeList(address user)
         external
         view
         returns (uint256[] codes, uint256[] amounts)
     {
-        uint256 cnt = stakerInfoMap[staker].codeCount;
+        uint256 cnt = userInfoMap[user].codeCount;
         codes = new uint256[](cnt);
         amounts = new uint256[](cnt);
         for (uint256 i = 0; i < cnt; i++) {
-            codes[i] = stakerInfoMap[staker].codesMap[i];
-            amounts[i] = stakerInfoMap[staker].codesAmountMap[codes[i]];
+            codes[i] = userInfoMap[user].codesMap[i];
+            amounts[i] = userInfoMap[user].codesAmountMap[codes[i]];
         }
     }
 
     /// --------------Private Method--------------------------
 
-    function checkStakeInValue(uint256[] memory codes, uint256[] memory amounts)
+    function checkBuyValue(uint256[] memory codes, uint256[] memory amounts)
         private
         view
     {
@@ -410,7 +410,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         );
     }
 
-    function checkStakeOutValue(uint256[] memory codes) private view {
+    function checkRedeemValue(uint256[] memory codes) private view {
         require(codes.length > 0, "INVALID_CODES_LENGTH");
         require(codes.length <= maxCount, "CODES_LENGTH_TOO_LONG");
 
@@ -425,42 +425,42 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 }
             }
 
-            if (pendingStakeOutSearchMap[msg.sender][codes[i]] > 0) {
+            if (pendingRedeemSearchMap[msg.sender][codes[i]] > 0) {
                 require(false, "STAKER_CODE_IS_EXITING");
             }
         }
     }
 
-    function removeStakerCodesMap(uint256 valueToRemove, address staker)
+    function removeUserCodesMap(uint256 valueToRemove, address user)
         private
     {
-        if (stakerInfoMap[staker].codeCount <= 1) {
-            stakerInfoMap[staker].codeCount = 0;
-            stakerInfoMap[staker].codesMap[0] = 0;
+        if (userInfoMap[user].codeCount <= 1) {
+            userInfoMap[user].codeCount = 0;
+            userInfoMap[user].codesMap[0] = 0;
             return;
         }
 
-        if (stakerInfoMap[staker].codesIndexMap[valueToRemove] > 0) {
-            uint256 i = stakerInfoMap[staker].codesIndexMap[valueToRemove] - 1;
-            stakerInfoMap[staker].codesIndexMap[valueToRemove] = 0;
-            stakerInfoMap[staker].codesMap[i] = stakerInfoMap[staker]
-                .codesMap[stakerInfoMap[staker].codeCount - 1];
-            stakerInfoMap[staker].codesMap[stakerInfoMap[staker].codeCount -
+        if (userInfoMap[user].codesIndexMap[valueToRemove] > 0) {
+            uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
+            userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+            userInfoMap[user].codesMap[i] = userInfoMap[user]
+                .codesMap[userInfoMap[user].codeCount - 1];
+            userInfoMap[user].codesMap[userInfoMap[user].codeCount -
                 1] = 0;
-            stakerInfoMap[staker].codeCount--;
+            userInfoMap[user].codeCount--;
         }
     }
 
-    function removeCodeInfoMap(uint256 code, address staker) private {
+    function removeCodeInfoMap(uint256 code, address user) private {
         if (codesMap[code].addrCount <= 1) {
             codesMap[code].addrCount = 0;
             codesMap[code].codeAddressMap[0] = address(0);
             return;
         }
 
-        if (codesMap[code].addressIndexMap[staker] > 0) {
-            uint256 index = codesMap[code].addressIndexMap[staker] - 1;
-            codesMap[code].addressIndexMap[staker] = 0;
+        if (codesMap[code].addressIndexMap[user] > 0) {
+            uint256 index = codesMap[code].addressIndexMap[user] - 1;
+            codesMap[code].addressIndexMap[user] = 0;
             codesMap[code].codeAddressMap[index] = codesMap[code]
                 .codeAddressMap[codesMap[code].addrCount - 1];
             codesMap[code].codeAddressMap[codesMap[code].addrCount -
@@ -553,26 +553,26 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         return true;
     }
 
-    function stakeOutPendingRefund() private returns (bool) {
-        for (; pendingStakeOutCount > 0; ) {
-            uint256 i = pendingStakeOutStartIndex;
+    function redeemPendingRefund() private returns (bool) {
+        for (; pendingRedeemCount > 0; ) {
+            uint256 i = pendingRedeemStartIndex;
             require(
-                pendingStakeOutMap[i].staker != address(0),
+                pendingRedeemMap[i].user != address(0),
                 "STAKE_OUT_ADDRESS_ERROR"
             );
             uint256[] memory codes = new uint256[](1);
-            codes[0] = pendingStakeOutMap[i].code;
+            codes[0] = pendingRedeemMap[i].code;
 
             if (gasleft() < minGasLeft * 5) {
                 emit GasNotEnough();
                 return false;
             }
 
-            if (stakeOutAddress(codes, pendingStakeOutMap[i].staker)) {
-                pendingStakeOutStartIndex++;
-                pendingStakeOutCount--;
-                pendingStakeOutSearchMap[pendingStakeOutMap[i]
-                    .staker][pendingStakeOutMap[i].code] = 0;
+            if (redeemAddress(codes, pendingRedeemMap[i].user)) {
+                pendingRedeemStartIndex++;
+                pendingRedeemCount--;
+                pendingRedeemSearchMap[pendingRedeemMap[i]
+                    .user][pendingRedeemMap[i].code] = 0;
             } else {
                 return false;
             }
@@ -603,7 +603,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         return true;
     }
 
-    function stakeOutAddress(uint256[] memory codes, address staker)
+    function redeemAddress(uint256[] memory codes, address user)
         private
         returns (bool)
     {
@@ -611,7 +611,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         for (uint256 i = 0; i < codes.length; i++) {
             totalAmount = totalAmount.add(
-                stakerInfoMap[staker].codesAmountMap[codes[i]]
+                userInfoMap[user].codesAmountMap[codes[i]]
             );
         }
 
@@ -626,20 +626,20 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             );
 
             for (uint256 m = 0; m < codes.length; m++) {
-                stakerInfoMap[staker].codesAmountMap[codes[m]] = 0;
-                removeStakerCodesMap(codes[m], staker);
-                removeCodeInfoMap(codes[m], staker);
+                userInfoMap[user].codesAmountMap[codes[m]] = 0;
+                removeUserCodesMap(codes[m], user);
+                removeCodeInfoMap(codes[m], user);
             }
 
-            staker.transfer(totalAmount);
+            user.transfer(totalAmount);
 
             return true;
         }
         return false;
     }
 
-    function prizeWithdrawAddress(address staker) private returns (bool) {
-        uint256 totalAmount = stakerInfoMap[staker].prize;
+    function prizeWithdrawAddress(address user) private returns (bool) {
+        uint256 totalAmount = userInfoMap[user].prize;
         if (totalAmount <= poolInfo.demandDepositPool) {
             require(
                 poolInfo.demandDepositPool <= address(this).balance,
@@ -650,9 +650,9 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 totalAmount
             );
 
-            stakerInfoMap[staker].prize = 0;
+            userInfoMap[user].prize = 0;
 
-            staker.transfer(totalAmount);
+            user.transfer(totalAmount);
 
             return true;
         }

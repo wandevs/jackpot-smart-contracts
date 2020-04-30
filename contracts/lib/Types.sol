@@ -2,7 +2,7 @@ pragma solidity 0.4.26;
 
 
 contract Types {
-    struct StakerInfo {
+    struct UserInfo {
         uint256 prize;
         uint256 codeCount;
         mapping(uint256 => uint256) codesMap;
@@ -10,8 +10,8 @@ contract Types {
         mapping(uint256 => uint256) codesAmountMap;
     }
 
-    struct PendingStakeOut {
-        address staker;
+    struct PendingRedeem {
+        address user;
         uint256 code;
     }
 
@@ -42,15 +42,15 @@ contract Types {
         mapping(address => uint256) refundingSubsidyAmountMap;
     }
 
-    event StakeIn(
-        address indexed staker,
+    event Buy(
+        address indexed user,
         uint256 stakeAmount,
         uint256[] codes,
         uint256[] amounts
     );
 
-    event StakeOut(
-        address indexed staker,
+    event Redeem(
+        address indexed user,
         bool indexed success,
         uint256[] codes
     );
@@ -58,7 +58,7 @@ contract Types {
     event GasNotEnough();
 
     event PrizeWithdraw(
-        address indexed staker,
+        address indexed user,
         bool indexed success
     );
 

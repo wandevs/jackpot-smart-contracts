@@ -22,15 +22,15 @@ contract JacksPotStorage is LibOwnable, BasicStorage, Types {
 
     uint256 firstDelegateMinValue = 100 ether;
 
-    mapping(address => StakerInfo) public stakerInfoMap;
+    mapping(address => UserInfo) public userInfoMap;
 
     mapping(uint256 => CodeInfo) public codesMap;
 
     //------Data for pending stake out-----------------------
-    uint256 public pendingStakeOutStartIndex;
-    uint256 public pendingStakeOutCount;
-    mapping(uint256 => PendingStakeOut) public pendingStakeOutMap;
-    mapping(address => mapping(uint256 => uint256)) public pendingStakeOutSearchMap;
+    uint256 public pendingRedeemStartIndex;
+    uint256 public pendingRedeemCount;
+    mapping(uint256 => PendingRedeem) public pendingRedeemMap;
+    mapping(address => mapping(uint256 => uint256)) public pendingRedeemSearchMap;
 
     //------Data for pending prize out-----------------------
     uint256 public pendingPrizeWithdrawStartIndex;
