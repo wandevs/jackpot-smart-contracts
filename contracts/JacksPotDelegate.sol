@@ -10,7 +10,6 @@ import "./lib/ReentrancyGuard.sol";
 /// @title Jack's Pot Smart Contract
 /// @dev Jack’s Pot is a no-loss lottery game built on Wanchain
 contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
-
     modifier notClosed() {
         require(!closed, "GAME_ROUND_CLOSE");
         _;
@@ -33,7 +32,6 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         closed = false;
         feeRate = 0;
     }
-
 
     /// @dev User betting function. We do not support smart contract call for security.(DoS with revert)
     /// @param codes An array that can contain Numbers selected by the user.
@@ -75,6 +73,10 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 codesMap[codes[i]].codeAddressMap[codesMap[codes[i]]
                     .addrCount] = msg.sender;
                 codesMap[codes[i]].addrCount++;
+                require(
+                    codesMap[codes[i]].addrCount <= maxCount * 2,
+                    "CODE_BET_REACH_MAX_COUNT"
+                );
                 codesMap[codes[i]].addressIndexMap[msg
                     .sender] = codesMap[codes[i]].addrCount;
             }
@@ -288,8 +290,14 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         nonReentrant
     {
         require(validator != address(0), "INVALID_ADDRESS");
-        require(validator != validatorsInfo.currentValidator, "VALIDATOR_SAME_WITH_CURRENT");
-        require(validator != validatorsInfo.withdrawFromValidator, "VALIDATOR_IS_WITHDRAWING");
+        require(
+            validator != validatorsInfo.currentValidator,
+            "VALIDATOR_SAME_WITH_CURRENT"
+        );
+        require(
+            validator != validatorsInfo.withdrawFromValidator,
+            "VALIDATOR_IS_WITHDRAWING"
+        );
 
         validatorsInfo.currentValidator = validator;
     }
@@ -431,9 +439,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         }
     }
 
-    function removeUserCodesMap(uint256 valueToRemove, address user)
-        private
-    {
+    function removeUserCodesMap(uint256 valueToRemove, address user) private {
         if (userInfoMap[user].codeCount <= 1) {
             userInfoMap[user].codeCount = 0;
             userInfoMap[user].codesMap[0] = 0;
@@ -445,8 +451,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             userInfoMap[user].codesIndexMap[valueToRemove] = 0;
             userInfoMap[user].codesMap[i] = userInfoMap[user]
                 .codesMap[userInfoMap[user].codeCount - 1];
-            userInfoMap[user].codesMap[userInfoMap[user].codeCount -
-                1] = 0;
+            userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
             userInfoMap[user].codeCount--;
         }
     }
@@ -477,7 +482,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         }
 
         if (validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0) {
-            uint256 i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
+            uint256 i = validatorIndexMap[validatorsInfo
+                .withdrawFromValidator] - 1;
             validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
             validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount -
                 1];
