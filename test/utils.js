@@ -1,8 +1,12 @@
 const Web3 = require('web3');
 const JacksPotDelegate = artifacts.require('./JacksPotDelegate.sol');
 const JacksPotProxy = artifacts.require('./JacksPotProxy.sol');
+const TestHelper = artifacts.require('./test/TestHelper.sol');
+const TestBasicStorage = artifacts.require('./test/TestBasicStorage.sol');
 
 const BigNumber = require('bignumber.js');
+
+const fullTest = true;
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
 
@@ -36,15 +40,48 @@ const getContracts = async (accounts) => {
     await jackpot.methods.init().send({ from: accounts[0], gas: 10000000 });
 
     return {
-        jackpot
+        jackpot,
+        jackpotDelegate,
+        jackpotProxy
+    };
+};
+
+
+const getContractsWithoutDelegate = async (accounts) => {
+    const jackpotDelegate = await newContract(JacksPotDelegate);
+    
+    const jackpotProxy = await newContract(JacksPotProxy);
+
+    const jackpot = await getContractAt(JacksPotDelegate, jackpotProxy._address);
+
+    await jackpot.methods.init().send({ from: accounts[0], gas: 10000000 });
+
+    return {
+        jackpot,
+        jackpotDelegate,
+        jackpotProxy
     };
 };
 
 const clone = x => JSON.parse(JSON.stringify(x));
+
+const getTestHelper = async () => {
+    const testHelper = await newContract(TestHelper);
+    return testHelper;
+}
+
+const getTestBasicStorage = async () => {
+    const testBasicStorage = await newContract(TestBasicStorage);
+    return testBasicStorage;
+}
 
 module.exports = {
     getWeb3,
     newContract,
     getContracts,
     clone,
+    getContractsWithoutDelegate,
+    fullTest,
+    getTestHelper,
+    getTestBasicStorage,
 };

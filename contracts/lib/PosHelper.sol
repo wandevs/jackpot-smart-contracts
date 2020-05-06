@@ -2,7 +2,7 @@ pragma solidity 0.4.26;
 
 
 contract PosHelper {
-    function delegateIn(address, uint256 value) public returns (bool success) {
+    function delegateIn(address, uint256 value) internal returns (bool success) {
         bytes32 f = keccak256("delegateIn(address)");
         assembly {
             let free_ptr := mload(0x40)
@@ -28,7 +28,7 @@ contract PosHelper {
         success = true;
     }
 
-    function delegateOut(address) public returns (bool success) {
+    function delegateOut(address) internal returns (bool success) {
         bytes32 f = keccak256("delegateOut(address)");
         assembly {
             let free_ptr := mload(0x40)
