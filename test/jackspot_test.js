@@ -76,6 +76,10 @@ contract('JacksPot', accounts => {
       console.log(ret);
       assert.equal(ret.codeCount, '54');
 
+      ret = await jackpot.methods.getUserCodeList(accounts[0]).call();
+      // console.log(ret);
+      assert.equal(ret.amounts[0], '20000000000000000000');
+
       ret = await jackpot.methods.codesMap(1111).call();
       assert.equal(ret, '2');
 
