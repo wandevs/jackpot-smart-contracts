@@ -31,6 +31,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         maxDigital = 10000; // 0000~9999
         closed = false;
         feeRate = 0;
+        posPrecompileAddress = address(0xda);
+        randomPrecompileAddress = address(0x262);
     }
 
     /// @dev User betting function. We do not support smart contract call for security.(DoS with revert)
@@ -154,6 +156,17 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             "NO_DEFAULT_VALIDATOR"
         );
 
+        if (poolInfo.demandDepositPool <= subsidyInfo.total) {
+            return true;
+        }
+
+        if (
+            poolInfo.delegatePool.add(poolInfo.demandDepositPool) <=
+            subsidyInfo.total
+        ) {
+            return true;
+        }
+
         address currentValidator = validatorsInfo.currentValidator;
 
         uint256 total = poolInfo
@@ -164,9 +177,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             .mul(DIVISOR - poolInfo.delegatePercent)
             .div(DIVISOR);
         if (
-            (poolInfo.demandDepositPool > subsidyInfo.total) &&
-            (demandDepositAmount <
-                poolInfo.demandDepositPool.sub(subsidyInfo.total))
+            demandDepositAmount <
+            poolInfo.demandDepositPool.sub(subsidyInfo.total)
         ) {
             uint256 delegateAmount = poolInfo
                 .demandDepositPool
@@ -182,7 +194,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
 
             require(
-                delegateIn(currentValidator, delegateAmount),
+                delegateIn(currentValidator, delegateAmount, posPrecompileAddress),
                 "DELEGATE_IN_FAILED"
             );
 
@@ -220,10 +232,10 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     function lotterySettlement() external operatorOnly nonReentrant {
         require(closed, "MUST_CLOSE_BEFORE_SETTLEMENT");
 
-        uint256 epochId = getEpochId(now);
+        uint256 epochId = getEpochId(now, randomPrecompileAddress);
 
         // should use the random number latest
-        currentRandom = getRandomByEpochId(epochId + 1);
+        currentRandom = getRandomByEpochId(epochId + 1, randomPrecompileAddress);
 
         require(currentRandom != 0, "RANDOM_NUMBER_NOT_READY");
 
@@ -322,7 +334,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         require(delegateOutAmount == 0, "DELEGATE_OUT_AMOUNT_NOT_ZERO");
         validatorsInfo.withdrawFromValidator = validator;
         delegateOutAmount = validatorsAmountMap[validator];
-        require(delegateOut(validator), "DELEGATE_OUT_FAILED");
+        require(delegateOut(validator, posPrecompileAddress), "DELEGATE_OUT_FAILED");
 
         emit DelegateOut(validator, delegateOutAmount);
     }
@@ -416,7 +428,9 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             i++
         ) {
             address refundingAddress = subsidyInfo.refundingAddressMap[i];
-            total = total.add(subsidyInfo.refundingSubsidyAmountMap[refundingAddress]);
+            total = total.add(
+                subsidyInfo.refundingSubsidyAmountMap[refundingAddress]
+            );
         }
 
         // Total pending prize
@@ -439,6 +453,18 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             uint256 code = pendingRedeemMap[i].code;
             total = total.add(userInfoMap[user].codesAmountMap[code]);
         }
+    }
+
+    /// @dev set address for POS delegateIn delegateOut
+    function setPosPrecompileAddress(address addr) external onlyOwner {
+        require(addr != address(0), "POS_ADDRESS_NOT_ZERO");
+        posPrecompileAddress = addr;
+    }
+
+    /// @dev set address for random number get
+    function setRandomPrecompileAddress(address addr) external onlyOwner {
+        require(addr != address(0), "RANDOM_ADDRESS_NOT_ZERO");
+        randomPrecompileAddress = addr;
     }
 
     /// --------------Private Method--------------------------
@@ -604,6 +630,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                     singleAmount
                 );
+                subsidyInfo
+                .refundingSubsidyAmountMap[refundingAddress] = 0;
                 refundingAddress.transfer(singleAmount);
                 emit SubsidyRefund(refundingAddress, singleAmount);
             } else {

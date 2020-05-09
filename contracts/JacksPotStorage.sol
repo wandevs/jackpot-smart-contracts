@@ -79,4 +79,10 @@ contract JacksPotStorage is LibOwnable, BasicStorage, Types {
     uint256 public maxDigital;
 
     uint256 public currentRandom;
+
+    /// @dev address for POS delegateIn delegateOut
+    address public posPrecompileAddress;
+
+    /// @dev address for random number get
+    address public randomPrecompileAddress;
 }

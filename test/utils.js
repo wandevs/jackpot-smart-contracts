@@ -6,7 +6,7 @@ const TestBasicStorage = artifacts.require('./test/TestBasicStorage.sol');
 
 const BigNumber = require('bignumber.js');
 
-const fullTest = true;
+const fullTest = false;
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
 

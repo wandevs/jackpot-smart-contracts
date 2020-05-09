@@ -2,7 +2,7 @@ pragma solidity 0.4.26;
 
 
 contract PosHelper {
-    function delegateIn(address addr, uint256 value)
+    function delegateIn(address addr, uint256 value, address posPrecompileAddr)
         internal
         returns (bool success)
     {
@@ -12,34 +12,21 @@ contract PosHelper {
             mstore(free_ptr, f)
             mstore(add(free_ptr, 4), addr)
 
-            success := call(
-                gas,
-                0x00000000000000000000000000000000000000da,
-                value,
-                free_ptr,
-                36,
-                0,
-                0
-            )
+            success := call(gas, posPrecompileAddr, value, free_ptr, 36, 0, 0)
         }
     }
 
-    function delegateOut(address addr) internal returns (bool success) {
+    function delegateOut(address addr, address posPrecompileAddr)
+        internal
+        returns (bool success)
+    {
         bytes32 f = keccak256("delegateOut(address)");
         assembly {
             let free_ptr := mload(0x40)
             mstore(free_ptr, f)
             mstore(add(free_ptr, 4), addr)
 
-            success := call(
-                gas,
-                0x00000000000000000000000000000000000000da,
-                0,
-                free_ptr,
-                36,
-                0,
-                0
-            )
+            success := call(gas, posPrecompileAddr, 0, free_ptr, 36, 0, 0)
         }
     }
 
@@ -61,13 +48,17 @@ contract PosHelper {
         }
     }
 
-    function getRandomByEpochId(uint256 epochId) public view returns (uint256) {
+    function getRandomByEpochId(uint256 epochId, address randomPrecompileAddr)
+        public
+        view
+        returns (uint256)
+    {
         bytes32 functionSelector = keccak256(
             "getRandomNumberByEpochId(uint256)"
         );
 
         (uint256 result, bool success) = callWith32BytesReturnsUint256(
-            0x262,
+            randomPrecompileAddr,
             functionSelector,
             bytes32(epochId)
         );
@@ -77,17 +68,16 @@ contract PosHelper {
         return result;
     }
 
-    function getRandomByBlockTime(uint256 blockTime)
-        public
-        view
-        returns (uint256)
-    {
+    function getRandomByBlockTime(
+        uint256 blockTime,
+        address randomPrecompileAddr
+    ) public view returns (uint256) {
         bytes32 functionSelector = keccak256(
             "getRandomNumberByTimestamp(uint256)"
         );
 
         (uint256 result, bool success) = callWith32BytesReturnsUint256(
-            0x262,
+            randomPrecompileAddr,
             functionSelector,
             bytes32(blockTime)
         );
@@ -97,11 +87,15 @@ contract PosHelper {
         return result;
     }
 
-    function getEpochId(uint256 blockTime) public view returns (uint256) {
+    function getEpochId(uint256 blockTime, address randomPrecompileAddr)
+        public
+        view
+        returns (uint256)
+    {
         bytes32 functionSelector = keccak256("getEpochId(uint256)");
 
         (uint256 result, bool success) = callWith32BytesReturnsUint256(
-            0x262,
+            randomPrecompileAddr,
             functionSelector,
             bytes32(blockTime)
         );
