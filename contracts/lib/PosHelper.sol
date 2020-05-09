@@ -2,14 +2,17 @@ pragma solidity 0.4.26;
 
 
 contract PosHelper {
-    function delegateIn(address, uint256 value) internal returns (bool success) {
+    function delegateIn(address addr, uint256 value)
+        internal
+        returns (bool success)
+    {
         bytes32 f = keccak256("delegateIn(address)");
         assembly {
             let free_ptr := mload(0x40)
             mstore(free_ptr, f)
-            calldatacopy(add(free_ptr, 4), 4, 32)
+            mstore(add(free_ptr, 4), addr)
 
-            let result := call(
+            success := call(
                 gas,
                 0x00000000000000000000000000000000000000da,
                 value,
@@ -18,24 +21,17 @@ contract PosHelper {
                 0,
                 0
             )
-            returndatacopy(free_ptr, 0, returndatasize)
-
-            if iszero(result) {
-                revert(free_ptr, returndatasize)
-            }
-            return(free_ptr, returndatasize)
         }
-        success = true;
     }
 
-    function delegateOut(address) internal returns (bool success) {
+    function delegateOut(address addr) internal returns (bool success) {
         bytes32 f = keccak256("delegateOut(address)");
         assembly {
             let free_ptr := mload(0x40)
             mstore(free_ptr, f)
-            calldatacopy(add(free_ptr, 4), 4, 32)
+            mstore(add(free_ptr, 4), addr)
 
-            let result := call(
+            success := call(
                 gas,
                 0x00000000000000000000000000000000000000da,
                 0,
@@ -44,14 +40,7 @@ contract PosHelper {
                 0,
                 0
             )
-            returndatacopy(free_ptr, 0, returndatasize)
-
-            if iszero(result) {
-                revert(free_ptr, returndatasize)
-            }
-            return(free_ptr, returndatasize)
         }
-        success = true;
     }
 
     function callWith32BytesReturnsUint256(

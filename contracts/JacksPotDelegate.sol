@@ -200,7 +200,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 delegateAmount
             );
             emit DelegateIn(validatorsInfo.currentValidator, delegateAmount);
-            return;
+            return true;
         }
     }
 
