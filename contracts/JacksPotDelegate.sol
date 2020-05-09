@@ -202,6 +202,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             emit DelegateIn(validatorsInfo.currentValidator, delegateAmount);
             return true;
         }
+        return true;
     }
 
     /// @dev This function is called regularly by the robot every 6 morning to open betting.
