@@ -216,6 +216,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
     /// @dev Lottery settlement function. On the Friday night, the robot calls this function to get random Numbers and complete the lucky draw process.
     function lotterySettlement() external operatorOnly nonReentrant {
+        require(closed, "MUST_CLOSE_BEFORE_SETTLEMENT");
+
         uint256 epochId = getEpochId(now);
 
         // should use the random number latest
