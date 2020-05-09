@@ -406,13 +406,12 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev get all the pending out amount
-    function getPendingAmount() external view returns (uint256) {
-        uint256 total = 0;
+    function getPendingAmount() external view returns (uint256 total) {
         address user;
-
+        uint256 i;
         // Total pending subsidy
         for (
-            uint256 i = subsidyInfo.startIndex;
+            i = subsidyInfo.startIndex;
             i < subsidyInfo.startIndex + subsidyInfo.refundingCount;
             i++
         ) {
@@ -422,26 +421,24 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         // Total pending prize
         for (
-            uint256 j = pendingPrizeWithdrawStartIndex;
-            j < pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount;
-            j++
+            i = pendingPrizeWithdrawStartIndex;
+            i < pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount;
+            i++
         ) {
-            user = pendingPrizeWithdrawMap[j];
+            user = pendingPrizeWithdrawMap[i];
             total.add(userInfoMap[user].prize);
         }
 
         // Total pending redeem
         for (
-            uint256 m = pendingRedeemStartIndex;
-            m < pendingRedeemStartIndex + pendingRedeemCount;
-            m++
+            i = pendingRedeemStartIndex;
+            i < pendingRedeemStartIndex + pendingRedeemCount;
+            i++
         ) {
-            user = pendingRedeemMap[m].user;
-            uint256 code = pendingRedeemMap[m].code;
+            user = pendingRedeemMap[i].user;
+            uint256 code = pendingRedeemMap[i].code;
             total.add(userInfoMap[user].codesAmountMap[code]);
         }
-
-        return total;
     }
 
     /// --------------Private Method--------------------------
