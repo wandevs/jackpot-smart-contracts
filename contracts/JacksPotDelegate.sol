@@ -166,7 +166,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         if (
             (poolInfo.demandDepositPool > subsidyInfo.total) &&
             (demandDepositAmount <
-            poolInfo.demandDepositPool.sub(subsidyInfo.total))
+                poolInfo.demandDepositPool.sub(subsidyInfo.total))
         ) {
             uint256 delegateAmount = poolInfo
                 .demandDepositPool
@@ -491,10 +491,17 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         if (userInfoMap[user].codesIndexMap[valueToRemove] > 0) {
             uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
+
             userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+
             userInfoMap[user].codesMap[i] = userInfoMap[user]
                 .codesMap[userInfoMap[user].codeCount - 1];
+
+            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i] +
+                1] = i;
+
             userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
+
             userInfoMap[user].codeCount--;
         }
     }
@@ -511,6 +518,10 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             codesMap[code].addressIndexMap[user] = 0;
             codesMap[code].codeAddressMap[index] = codesMap[code]
                 .codeAddressMap[codesMap[code].addrCount - 1];
+
+            codesMap[code].addressIndexMap[codesMap[code]
+                .codeAddressMap[index]] = index + 1;
+
             codesMap[code].codeAddressMap[codesMap[code].addrCount -
                 1] = address(0);
             codesMap[code].addrCount--;
@@ -530,6 +541,9 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
             validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount -
                 1];
+
+            validatorIndexMap[validatorsMap[i]] = i + 1;
+
             validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
             validatorsInfo.validatorsCount--;
         }
