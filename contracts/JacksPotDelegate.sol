@@ -416,7 +416,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             i++
         ) {
             address refundingAddress = subsidyInfo.refundingAddressMap[i];
-            total.add(subsidyInfo.refundingSubsidyAmountMap[refundingAddress]);
+            total = total.add(subsidyInfo.refundingSubsidyAmountMap[refundingAddress]);
         }
 
         // Total pending prize
@@ -426,7 +426,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             i++
         ) {
             user = pendingPrizeWithdrawMap[i];
-            total.add(userInfoMap[user].prize);
+            total = total.add(userInfoMap[user].prize);
         }
 
         // Total pending redeem
@@ -437,7 +437,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         ) {
             user = pendingRedeemMap[i].user;
             uint256 code = pendingRedeemMap[i].code;
-            total.add(userInfoMap[user].codesAmountMap[code]);
+            total = total.add(userInfoMap[user].codesAmountMap[code]);
         }
     }
 
