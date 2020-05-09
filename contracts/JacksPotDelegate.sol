@@ -164,8 +164,9 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             .mul(DIVISOR - poolInfo.delegatePercent)
             .div(DIVISOR);
         if (
-            demandDepositAmount <
-            poolInfo.demandDepositPool.sub(subsidyInfo.total)
+            (poolInfo.demandDepositPool > subsidyInfo.total) &&
+            (demandDepositAmount <
+            poolInfo.demandDepositPool.sub(subsidyInfo.total))
         ) {
             uint256 delegateAmount = poolInfo
                 .demandDepositPool
@@ -402,6 +403,44 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             codes[i] = userInfoMap[user].codesMap[i];
             amounts[i] = userInfoMap[user].codesAmountMap[codes[i]];
         }
+    }
+
+    /// @dev get all the pending out amount
+    function getPendingAmount() external view returns (uint256) {
+        uint256 total = 0;
+
+        // Total pending subsidy
+        for (
+            uint256 i = subsidyInfo.startIndex;
+            i < subsidyInfo.startIndex + subsidyInfo.refundingCount;
+            i++
+        ) {
+            address refundingAddress = subsidyInfo.refundingAddressMap[i];
+            total.add(subsidyInfo.refundingSubsidyAmountMap[refundingAddress]);
+        }
+
+        // Total pending prize
+        for (
+            uint256 j = pendingPrizeWithdrawStartIndex;
+            j < pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount;
+            j++
+        ) {
+            address user = pendingPrizeWithdrawMap[j];
+            total.add(userInfoMap[user].prize);
+        }
+
+        // Total pending redeem
+        for (
+            uint256 m = pendingRedeemStartIndex;
+            m < pendingRedeemStartIndex + pendingRedeemCount;
+            m++
+        ) {
+            address user = pendingRedeemMap[m].user;
+            uint256 code = pendingRedeemMap[m].code;
+            total.add(userInfoMap[user].codesAmountMap[code]);
+        }
+
+        return total;
     }
 
     /// --------------Private Method--------------------------
