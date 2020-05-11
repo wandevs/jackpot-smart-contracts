@@ -421,6 +421,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     function getPendingAmount() external view returns (uint256 total) {
         address user;
         uint256 i;
+        total = 0;
         // Total pending subsidy
         for (
             i = subsidyInfo.startIndex;
