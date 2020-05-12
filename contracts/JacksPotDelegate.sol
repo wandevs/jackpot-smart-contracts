@@ -84,6 +84,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
         }
 
+        require(userInfoMap[msg.sender].codeCount <= maxCount, "OUT_OF_MAX_COUNT");
+
         require(totalAmount == msg.value, "VALUE_NOT_EQUAL_AMOUNT");
 
         poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);

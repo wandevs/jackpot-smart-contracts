@@ -721,4 +721,37 @@ contract('JacksPot', accounts => {
 
   }
 
+  // it('should success WorkFlow', async () => {
+  //   let jackpot = (await getContracts(accounts)).jackpot;
+  //   await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+  //   await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+  //   let res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
+  //   await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
+
+
+  //   await jackpot.methods.buy([1904], [stake]).send({ from: accounts[0], gas: 1e7, value: stake });
+  //   await jackpot.methods.buy([1904], [stake2]).send({ from: accounts[1], gas: 1e7, value: stake2 });
+  //   await jackpot.methods.buy([1904], [stake3]).send({ from: accounts[2], gas: 1e7, value: stake3 });
+  //   await jackpot.methods.buy([1904], [stake4]).send({ from: accounts[3], gas: 1e7, value: stake4 });
+  //   await jackpot.methods.buy([1904], [stake]).send({ from: accounts[4], gas: 1e7, value: stake });
+    
+  //   await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+
+  //   res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
+  //   await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
+
+  //   await jackpot.methods.setFeeRate(100).send({ from: accounts[0], value: 0, gas: 10000000 });
+  //   await getWeb3().eth.sendTransaction({ from: accounts[1], to: jackpot._address, value: stake });
+  //   await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
+
+  //   await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+
+  //   res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
+
+  //   await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
+    
+  //   // console.log(JSON.stringify(res, null, 4));
+  // });
+
+
 });
