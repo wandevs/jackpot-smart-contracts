@@ -577,7 +577,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             found = true;
         } else {
             for (uint256 m = 0; m < codesMap[code].addrCount; m++) {
-                if (codesMap[code].codesMap[code].codeAddressMap[i] == user) {
+                if (codesMap[code].codeAddressMap[i] == user) {
                     i = m;
                     found = true;
                     break;
