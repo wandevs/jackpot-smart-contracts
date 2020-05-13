@@ -54,20 +54,19 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             totalAmount = totalAmount.add(amounts[i]);
 
             //Save stake info
-            if (userInfoMap[msg.sender].codesAmountMap[codes[i]] == 0) {
+            if (userInfoMap[msg.sender].codesIndexMap[codes[i]] == 0) {
                 userInfoMap[msg.sender].codesMap[userInfoMap[msg.sender]
                     .codeCount] = codes[i];
-
                 userInfoMap[msg.sender].codeCount++;
                 userInfoMap[msg.sender]
                     .codesIndexMap[codes[i]] = userInfoMap[msg.sender]
                     .codeCount;
             }
 
-            userInfoMap[msg.sender]
-                    .codesAmountMap[codes[i]] = userInfoMap[msg.sender]
-                    .codesAmountMap[codes[i]]
-                    .add(amounts[i]);
+            userInfoMap[msg.sender].codesAmountMap[codes[i]] = userInfoMap[msg
+                .sender]
+                .codesAmountMap[codes[i]]
+                .add(amounts[i]);
 
             //Save code info
             if (codesMap[codes[i]].addressIndexMap[msg.sender] == 0) {
@@ -524,29 +523,38 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
     /// @dev Remove user info map.
     function removeUserCodesMap(uint256 valueToRemove, address user) private {
+        // If user have only one code, just remove it
+        if (userInfoMap[user].codeCount <= 1) {
+            userInfoMap[user].codeCount = 0;
+            userInfoMap[user].codesMap[0] = 0;
+            userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+            return;
+        }
+
+        uint256 i = 0;
+        bool found = false;
         // If the code has a index
         if (userInfoMap[user].codesIndexMap[valueToRemove] > 0) {
-            // If user have only one code, just remove it
-            if (userInfoMap[user].codeCount <= 1) {
-                userInfoMap[user].codeCount = 0;
-                userInfoMap[user].codesMap[0] = 0;
-                userInfoMap[user].codesIndexMap[valueToRemove] = 0;
-                return;
-            }
-
             // get code index in map
-            uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
+            i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
+            found = true;
+        } else {
+            for (uint256 m = 0; m < userInfoMap[user].codeCount; m++) {
+                if (userInfoMap[user].codesMap[m] == valueToRemove) {
+                    i = m;
+                    found = true;
+                    break;
+                }
+            }
+        }
 
-            // save last element to index position
-            userInfoMap[user].codesMap[i] = userInfoMap[user]
-                .codesMap[userInfoMap[user].codeCount - 1];
-
-            // update index of swap element
-            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] = userInfoMap[user].codesIndexMap[valueToRemove];
-
-            // remove the index record
+        if (found) {
+            // remove the index of record
             userInfoMap[user].codesIndexMap[valueToRemove] = 0;
-
+            // save last element to index position
+            userInfoMap[user].codesMap[i] = userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1];
+            // update index of swap element
+            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] = i + 1;
             // remove last element
             userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
 
@@ -555,44 +563,64 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     function removeCodeInfoMap(uint256 code, address user) private {
-        if (codesMap[code].addressIndexMap[user] > 0) {
-            if (codesMap[code].addrCount <= 1) {
-                codesMap[code].addrCount = 0;
-                codesMap[code].codeAddressMap[0] = address(0);
-                codesMap[code].addressIndexMap[user] = 0;
-                return;
-            }
-
-            uint256 index = codesMap[code].addressIndexMap[user] - 1;
+        if (codesMap[code].addrCount <= 1) {
+            codesMap[code].addrCount = 0;
+            codesMap[code].codeAddressMap[0] = address(0);
             codesMap[code].addressIndexMap[user] = 0;
-            codesMap[code].codeAddressMap[index] = codesMap[code]
-                .codeAddressMap[codesMap[code].addrCount - 1];
+            return;
+        }
 
-            codesMap[code].addressIndexMap[codesMap[code]
-                .codeAddressMap[index]] = index + 1;
+        uint256 i = 0;
+        bool found = false;
+        if (codesMap[code].addressIndexMap[user] > 0) {
+            i = codesMap[code].addressIndexMap[user] - 1;
+            found = true;
+        } else {
+            for (uint256 m = 0; m < codesMap[code].addrCount; m++) {
+                if (codesMap[code].codesMap[code].codeAddressMap[i] == user) {
+                    i = m;
+                    found = true;
+                    break;
+                }
+            }
+        }
 
-            codesMap[code].codeAddressMap[codesMap[code].addrCount -
-                1] = address(0);
+        if (found) {
+            codesMap[code].addressIndexMap[user] = 0;
+            codesMap[code].codeAddressMap[i] = codesMap[code].codeAddressMap[codesMap[code].addrCount - 1];
+            codesMap[code].addressIndexMap[codesMap[code].codeAddressMap[i]] = i + 1;
+            codesMap[code].codeAddressMap[codesMap[code].addrCount - 1] = address(0);
             codesMap[code].addrCount--;
         }
     }
 
     function removeValidatorMap() private {
-        if (validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0) {
-            if (validatorsInfo.validatorsCount <= 1) {
-                validatorsInfo.validatorsCount = 0;
-                validatorsMap[0] = address(0);
-                validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
-                return;
-            }
-            uint256 i = validatorIndexMap[validatorsInfo
-                .withdrawFromValidator] - 1;
+        if (validatorsInfo.validatorsCount <= 1) {
+            validatorsInfo.validatorsCount = 0;
+            validatorsMap[0] = address(0);
             validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
-            validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount -
-                1];
+            return;
+        }
 
+        uint256 i = 0;
+        bool found = false;
+        if (validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0) {
+            i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
+            found = true;
+        } else {
+            for (uint256 m = 0; m < validatorsInfo.validatorsCount; m++) {
+                if (validatorsMap[m] == validatorsInfo.withdrawFromValidator) {
+                    i = m;
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
+            validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
+            validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount - 1];
             validatorIndexMap[validatorsMap[i]] = i + 1;
-
             validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
             validatorsInfo.validatorsCount--;
         }
