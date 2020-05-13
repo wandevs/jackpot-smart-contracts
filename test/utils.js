@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const assert = require('assert');
 const JacksPotDelegate = artifacts.require('./JacksPotDelegate.sol');
 const JacksPotProxy = artifacts.require('./JacksPotProxy.sol');
 const TestHelper = artifacts.require('./test/TestHelper.sol');
@@ -75,6 +76,17 @@ const getTestBasicStorage = async () => {
     return testBasicStorage;
 }
 
+const resAssert = (res, gasUsed, eventName, item, value) => {
+    assert.equal(Math.abs(res.gasUsed - gasUsed) < 100, true, "Gas used not match");
+    if (eventName) {
+        assert.equal(res.events[eventName] != undefined, true, "Event name not found");
+    }
+
+    if (item) {
+        assert.equal(res.events[eventName].returnValues[item], value, "Event value incorrect");
+    }
+}
+
 module.exports = {
     getWeb3,
     newContract,
@@ -84,4 +96,5 @@ module.exports = {
     fullTest,
     getTestHelper,
     getTestBasicStorage,
+    resAssert,
 };

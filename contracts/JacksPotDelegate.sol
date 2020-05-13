@@ -84,7 +84,10 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
         }
 
-        require(userInfoMap[msg.sender].codeCount <= maxCount, "OUT_OF_MAX_COUNT");
+        require(
+            userInfoMap[msg.sender].codeCount <= maxCount,
+            "OUT_OF_MAX_COUNT"
+        );
 
         require(totalAmount == msg.value, "VALUE_NOT_EQUAL_AMOUNT");
 
@@ -196,7 +199,11 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
 
             require(
-                delegateIn(currentValidator, delegateAmount, posPrecompileAddress),
+                delegateIn(
+                    currentValidator,
+                    delegateAmount,
+                    posPrecompileAddress
+                ),
                 "DELEGATE_IN_FAILED"
             );
 
@@ -237,7 +244,10 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         uint256 epochId = getEpochId(now, randomPrecompileAddress);
 
         // should use the random number latest
-        currentRandom = getRandomByEpochId(epochId + 1, randomPrecompileAddress);
+        currentRandom = getRandomByEpochId(
+            epochId + 1,
+            randomPrecompileAddress
+        );
 
         require(currentRandom != 0, "RANDOM_NUMBER_NOT_READY");
 
@@ -336,7 +346,10 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         require(delegateOutAmount == 0, "DELEGATE_OUT_AMOUNT_NOT_ZERO");
         validatorsInfo.withdrawFromValidator = validator;
         delegateOutAmount = validatorsAmountMap[validator];
-        require(delegateOut(validator, posPrecompileAddress), "DELEGATE_OUT_FAILED");
+        require(
+            delegateOut(validator, posPrecompileAddress),
+            "DELEGATE_OUT_FAILED"
+        );
 
         emit DelegateOut(validator, delegateOutAmount);
     }
@@ -508,24 +521,34 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         }
     }
 
+    /// @dev Remove user info map.
     function removeUserCodesMap(uint256 valueToRemove, address user) private {
-        if (userInfoMap[user].codeCount <= 1) {
-            userInfoMap[user].codeCount = 0;
-            userInfoMap[user].codesMap[0] = 0;
-            return;
-        }
-
+        // If the code has a index
         if (userInfoMap[user].codesIndexMap[valueToRemove] > 0) {
+            // If user have only one code, just remove it
+            if (userInfoMap[user].codeCount <= 1) {
+                userInfoMap[user].codeCount = 0;
+                userInfoMap[user].codesMap[0] = 0;
+                userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+                return;
+            }
+
+            // get code index in map
             uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
 
+            // remove the index record
             userInfoMap[user].codesIndexMap[valueToRemove] = 0;
 
+            // save last element to index position
             userInfoMap[user].codesMap[i] = userInfoMap[user]
                 .codesMap[userInfoMap[user].codeCount - 1];
 
-            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i] +
-                1] = i;
+            // update index of swap element
+            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] =
+                i +
+                1;
 
+            // remove last element
             userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
 
             userInfoMap[user].codeCount--;
@@ -533,13 +556,14 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     function removeCodeInfoMap(uint256 code, address user) private {
-        if (codesMap[code].addrCount <= 1) {
-            codesMap[code].addrCount = 0;
-            codesMap[code].codeAddressMap[0] = address(0);
-            return;
-        }
-
         if (codesMap[code].addressIndexMap[user] > 0) {
+            if (codesMap[code].addrCount <= 1) {
+                codesMap[code].addrCount = 0;
+                codesMap[code].codeAddressMap[0] = address(0);
+                codesMap[code].addressIndexMap[user] = 0;
+                return;
+            }
+
             uint256 index = codesMap[code].addressIndexMap[user] - 1;
             codesMap[code].addressIndexMap[user] = 0;
             codesMap[code].codeAddressMap[index] = codesMap[code]
@@ -555,13 +579,13 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     function removeValidatorMap() private {
-        if (validatorsInfo.validatorsCount <= 1) {
-            validatorsInfo.validatorsCount = 0;
-            validatorsMap[0] = address(0);
-            return;
-        }
-
         if (validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0) {
+            if (validatorsInfo.validatorsCount <= 1) {
+                validatorsInfo.validatorsCount = 0;
+                validatorsMap[0] = address(0);
+                validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
+                return;
+            }
             uint256 i = validatorIndexMap[validatorsInfo
                 .withdrawFromValidator] - 1;
             validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
@@ -633,8 +657,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                     singleAmount
                 );
-                subsidyInfo
-                .refundingSubsidyAmountMap[refundingAddress] = 0;
+                subsidyInfo.refundingSubsidyAmountMap[refundingAddress] = 0;
                 refundingAddress.transfer(singleAmount);
                 emit SubsidyRefund(refundingAddress, singleAmount);
             } else {
@@ -712,6 +735,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 "SC_BALANCE_ERROR"
             );
 
+            user.transfer(totalAmount);
+
             poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                 totalAmount
             );
@@ -721,8 +746,6 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 removeUserCodesMap(codes[m], user);
                 removeCodeInfoMap(codes[m], user);
             }
-
-            user.transfer(totalAmount);
 
             return true;
         }

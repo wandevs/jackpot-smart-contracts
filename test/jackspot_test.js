@@ -1,11 +1,12 @@
 const assert = require('assert');
-const { getContracts, getWeb3, fullTest, getContractsWithoutDelegate } = require('./utils');
+const { getContracts, getWeb3, fullTest, getContractsWithoutDelegate, resAssert, getTestHelper } = require('./utils');
 const BigNumber = require('bignumber.js');
 
 const stake = web3.utils.toWei('10');
 const stake2 = web3.utils.toWei('20');
 const stake3 = web3.utils.toWei('30');
 const stake4 = web3.utils.toWei('40');
+const stake300 = web3.utils.toWei('300');
 
 const gasPrice = 180e9;
 
@@ -620,7 +621,7 @@ contract('JacksPot', accounts => {
       await jackpot.methods.buy([1904], [stake3]).send({ from: accounts[2], gas: 1e7, value: stake3 });
       await jackpot.methods.buy([1904], [stake4]).send({ from: accounts[3], gas: 1e7, value: stake4 });
       await jackpot.methods.buy([1904], [stake]).send({ from: accounts[4], gas: 1e7, value: stake });
-      
+
       await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
 
       res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
@@ -635,7 +636,7 @@ contract('JacksPot', accounts => {
       res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
 
       await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
-      
+
       // console.log(JSON.stringify(res, null, 4));
     });
 
@@ -721,37 +722,129 @@ contract('JacksPot', accounts => {
 
   }
 
-  // it('should success WorkFlow', async () => {
-  //   let jackpot = (await getContracts(accounts)).jackpot;
-  //   await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
-  //   await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
-  //   let res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
-  //   await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
+  it('should success WorkFlow', async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    const testHelper = await getTestHelper();
+    let res = {};
+    let ret = {};
+    // Set operator
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+
+    // Set test pos sc address
+    await jackpot.methods.setRandomPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    await jackpot.methods.setPosPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    ret = await jackpot.methods.posPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+    ret = await jackpot.methods.randomPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+
+    // set validator
+    await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+
+    // buy
+    res = await jackpot.methods.buy([0], [stake]).send({ from: accounts[2], value: stake, gas: 1e7 });
+    resAssert(res, 191744, 'Buy', 'stakeAmount', stake.toString());
+    res = await jackpot.methods.buy([1], [stake2]).send({ from: accounts[2], value: stake2, gas: 1e7 });
+    resAssert(res, 176872, 'Buy', 'stakeAmount', stake2.toString());
+    res = await jackpot.methods.buy([6666], [stake300]).send({ from: accounts[4], value: stake300, gas: 1e7 });
+    resAssert(res, 191936, 'Buy', 'stakeAmount', stake300.toString());
+
+    // update balance
+    res = await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 38355, 'UpdateSuccess');
+
+    // check poolInfo
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '330000000000000000000');
+
+    // redeem
+    res = await jackpot.methods.redeem([1]).send({ from: accounts[2], gas: 1e7 });
+    resAssert(res, 56771, 'Redeem', 'success', true);
+
+    // check poolInfo
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '310000000000000000000');
+
+    // update balance
+    res = await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 38355, 'UpdateSuccess');
+
+    // delegateIn
+    res = await jackpot.methods.runDelegateIn().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 177101, 'DelegateIn', 'amount', '217000000000000000000');
+
+    // check pos sc balance
+    ret = await getWeb3().eth.getBalance(testHelper._address);
+    assert.equal(ret, '217000000000000000000');
+
+    // check pos sc amount
+    ret = await testHelper.methods.delegateAmountMap(accounts[0]).call();
+    assert.equal(ret, '217000000000000000000');
+
+    // check poolInfo
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '93000000000000000000');
+
+    res = await jackpot.methods.redeem([6666]).send({ from: accounts[4], gas: 1e7 });
+    resAssert(res, 122765, 'Redeem', 'success', false);
+
+    ret = await jackpot.methods.getPendingAmount().call();
+    assert.equal(ret, stake300.toString());
+
+    // check poolInfo
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '93000000000000000000');
+
+    res = await jackpot.methods.subsidyIn().send({ from: accounts[5], value: stake300 });
+    resAssert(res, 81073);
+
+    // check poolInfo
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '393000000000000000000');
+
+    // update balance
+    res = await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 56383, 'UpdateSuccess');
+
+    // check poolInfo
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '93000000000000000000');
+
+    ret = await jackpot.methods.getPendingAmount().call();
+    assert.equal(ret, '0');
+
+    try {
+      // subsidy out should failed when nothing in.
+      res = await jackpot.methods.subsidyOut(stake).send({from: accounts[4], gas: 1e7})
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+
+    // subsidy out require.
+    res = await jackpot.methods.subsidyOut(stake).send({from: accounts[5], gas: 1e7})
+    resAssert(res, 96961);
+
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '93000000000000000000');
+
+    res = await jackpot.methods.update().send({from:accounts[1], gas:1e7});
+    resAssert(res, 56088, 'UpdateSuccess');
+    resAssert(res, 56088, 'SubsidyRefund', 'refundAddress', accounts[5]);
+    resAssert(res, 56088, 'SubsidyRefund', 'amount', stake);
+
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '93000000000000000000');
 
 
-  //   await jackpot.methods.buy([1904], [stake]).send({ from: accounts[0], gas: 1e7, value: stake });
-  //   await jackpot.methods.buy([1904], [stake2]).send({ from: accounts[1], gas: 1e7, value: stake2 });
-  //   await jackpot.methods.buy([1904], [stake3]).send({ from: accounts[2], gas: 1e7, value: stake3 });
-  //   await jackpot.methods.buy([1904], [stake4]).send({ from: accounts[3], gas: 1e7, value: stake4 });
-  //   await jackpot.methods.buy([1904], [stake]).send({ from: accounts[4], gas: 1e7, value: stake });
-    
-  //   await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+    console.log('gas used:', res.gasUsed);
+    console.log(res.events);
 
-  //   res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
-  //   await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
 
-  //   await jackpot.methods.setFeeRate(100).send({ from: accounts[0], value: 0, gas: 10000000 });
-  //   await getWeb3().eth.sendTransaction({ from: accounts[1], to: jackpot._address, value: stake });
-  //   await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
 
-  //   await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+    // console.log(JSON.stringify(res, null, 4));
+  });
 
-  //   res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
-
-  //   await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
-    
-  //   // console.log(JSON.stringify(res, null, 4));
-  // });
 
 
 });
