@@ -54,13 +54,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             totalAmount = totalAmount.add(amounts[i]);
 
             //Save stake info
-            if (userInfoMap[msg.sender].codesAmountMap[codes[i]] > 0) {
-                userInfoMap[msg.sender]
-                    .codesAmountMap[codes[i]] = userInfoMap[msg.sender]
-                    .codesAmountMap[codes[i]]
-                    .add(amounts[i]);
-            } else {
-                userInfoMap[msg.sender].codesAmountMap[codes[i]] = amounts[i];
+            if (userInfoMap[msg.sender].codesAmountMap[codes[i]] == 0) {
                 userInfoMap[msg.sender].codesMap[userInfoMap[msg.sender]
                     .codeCount] = codes[i];
 
@@ -70,11 +64,18 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                     .codeCount;
             }
 
+            userInfoMap[msg.sender]
+                    .codesAmountMap[codes[i]] = userInfoMap[msg.sender]
+                    .codesAmountMap[codes[i]]
+                    .add(amounts[i]);
+
             //Save code info
             if (codesMap[codes[i]].addressIndexMap[msg.sender] == 0) {
                 codesMap[codes[i]].codeAddressMap[codesMap[codes[i]]
                     .addrCount] = msg.sender;
                 codesMap[codes[i]].addrCount++;
+
+                // max 100 users in one code.
                 require(
                     codesMap[codes[i]].addrCount <= maxCount * 2,
                     "CODE_BET_REACH_MAX_COUNT"
@@ -536,17 +537,15 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             // get code index in map
             uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
 
-            // remove the index record
-            userInfoMap[user].codesIndexMap[valueToRemove] = 0;
-
             // save last element to index position
             userInfoMap[user].codesMap[i] = userInfoMap[user]
                 .codesMap[userInfoMap[user].codeCount - 1];
 
             // update index of swap element
-            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] =
-                i +
-                1;
+            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] = userInfoMap[user].codesIndexMap[valueToRemove];
+
+            // remove the index record
+            userInfoMap[user].codesIndexMap[valueToRemove] = 0;
 
             // remove last element
             userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
