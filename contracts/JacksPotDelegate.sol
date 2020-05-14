@@ -755,8 +755,6 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 "SC_BALANCE_ERROR"
             );
 
-            user.transfer(totalAmount);
-
             poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                 totalAmount
             );
@@ -767,6 +765,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 removeCodeInfoMap(codes[m], user);
             }
 
+            user.transfer(totalAmount);
             return true;
         }
         return false;
