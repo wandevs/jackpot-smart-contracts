@@ -74,11 +74,6 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                     .addrCount] = msg.sender;
                 codesMap[codes[i]].addrCount++;
 
-                // max 100 users in one code.
-                require(
-                    codesMap[codes[i]].addrCount <= maxCount * 2,
-                    "CODE_BET_REACH_MAX_COUNT"
-                );
                 codesMap[codes[i]].addressIndexMap[msg
                     .sender] = codesMap[codes[i]].addrCount;
             }
