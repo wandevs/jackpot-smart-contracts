@@ -77,7 +77,7 @@ const getTestBasicStorage = async () => {
 }
 
 const resAssert = (res, gasUsed, eventName, item, value) => {
-    assert.equal(Math.abs(res.gasUsed - gasUsed) < 100, true, "Gas used not match");
+    assert.equal(Math.abs(Number(res.gasUsed) - Number(gasUsed)) < 10000, true, "Gas used not match:" + res.gasUsed.toString() + ":" + gasUsed.toString());
     if (eventName) {
         assert.equal(res.events[eventName] != undefined, true, "Event name not found");
     }

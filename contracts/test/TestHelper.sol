@@ -38,7 +38,7 @@ contract TestHelper is BasicStorage, ReentrancyGuard {
     }
 
     function delegateIn(address addr) public payable returns(bool) {
-        delegateAmountMap[addr] += msg.value;
+        delegateAmountMap[addr] = delegateAmountMap[addr] + msg.value;
         return true;
     }
 }
