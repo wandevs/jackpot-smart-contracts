@@ -416,14 +416,16 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     function getUserCodeList(address user)
         external
         view
-        returns (uint256[] codes, uint256[] amounts)
+        returns (uint256[] codes, uint256[] amounts, uint256[] exits)
     {
         uint256 cnt = userInfoMap[user].codeCount;
         codes = new uint256[](cnt);
         amounts = new uint256[](cnt);
+        exits = new uint256[](cnt);
         for (uint256 i = 0; i < cnt; i++) {
             codes[i] = userInfoMap[user].codesMap[i];
             amounts[i] = userInfoMap[user].codesAmountMap[codes[i]];
+            exits[i] = pendingRedeemSearchMap[user][codes[i]];
         }
     }
 
@@ -748,6 +750,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 userInfoMap[user].codesAmountMap[codes[i]]
             );
         }
+
+        require(totalAmount > 0, "REDEEM_TOTAL_AMOUNT_SHOULD_NOT_ZERO");
 
         if (totalAmount <= poolInfo.demandDepositPool) {
             require(
