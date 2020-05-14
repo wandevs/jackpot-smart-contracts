@@ -490,14 +490,12 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         view
     {
         require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
-        require(codes.length > 0, "INVALID_CODES_LENGTH");
-        require(amounts.length > 0, "INVALID_AMOUNTS_LENGTH");
-        require(amounts.length <= maxCount, "AMOUNTS_LENGTH_TOO_LONG");
-        require(codes.length <= maxCount, "CODES_LENGTH_TOO_LONG");
         require(
             codes.length == amounts.length,
             "CODES_AND_AMOUNTS_LENGTH_NOT_EUQAL"
         );
+        require(codes.length > 0, "INVALID_CODES_LENGTH");
+        require(codes.length <= maxCount, "CODES_LENGTH_TOO_LONG");
     }
 
     function checkRedeemValue(uint256[] memory codes) private view {
