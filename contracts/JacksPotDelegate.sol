@@ -23,7 +23,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     /// --------------Public Method--------------------------
 
     /// @dev The operating contract accepts general transfer, and the transferred funds directly enter the prize pool.
-    function() public payable nonReentrant {}
+    function() public payable {}
 
     /// @dev This function will set default value.
     function init() public onlyOwner {

@@ -728,9 +728,7 @@ contract('JacksPot', accounts => {
 
   });
 
-
-
-  it('should success WorkFlow', async () => {
+  it.only('should success WorkFlow', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
     const testHelper = await getTestHelper();
     let res = {};
@@ -892,18 +890,24 @@ contract('JacksPot', accounts => {
     resAssert(res, 38355, 'UpdateSuccess');
 
     ret = await testHelper.methods.delegateAmountMap(accounts[0]).call();
-    console.log(ret);
     assert.equal(ret, '217000000000000000000');
 
     // check pos sc balance
     ret = await getWeb3().eth.getBalance(testHelper._address);
     assert.equal(ret, '217000000000000000000');
 
-    // delegateIn
-    // res = await jackpot.methods.runDelegateOut(accounts[0]).send({ from: accounts[1], gas: 1e7 });
-    // res = await jackpot.methods.runDelegateIn().send({ from: accounts[1], gas: 1e7 });
+    // delegateOut
+    res = await jackpot.methods.runDelegateOut(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+    
 
-    // resAssert(res, 38351, 'DelegateIn', 'amount', '217000000000000000000');
+    resAssert(res, 38351, 'DelegateOut', 'amount', '217000000000000000000');
+
+    ret = await testHelper.methods.delegateAmountMap(accounts[0]).call();
+    assert.equal(ret, '0');
+
+    // check pos sc balance
+    ret = await getWeb3().eth.getBalance(testHelper._address);
+    assert.equal(ret, '0');
 
 
     //-----------------
@@ -913,7 +917,5 @@ contract('JacksPot', accounts => {
     ret = await jackpot.methods.poolInfo().call();
     console.log('poolInfo:', ret);
   });
-
-
 
 });
