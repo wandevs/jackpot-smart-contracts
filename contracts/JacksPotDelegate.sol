@@ -57,7 +57,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             if (userInfoMap[msg.sender].codesIndexMap[codes[i]] == 0) {
                 userInfoMap[msg.sender].codesMap[userInfoMap[msg.sender]
                     .codeCount] = codes[i];
-                userInfoMap[msg.sender].codeCount++;
+                userInfoMap[msg.sender].codeCount = userInfoMap[msg.sender].codeCount.add(1);
                 userInfoMap[msg.sender]
                     .codesIndexMap[codes[i]] = userInfoMap[msg.sender]
                     .codeCount;
@@ -72,7 +72,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             if (codesMap[codes[i]].addressIndexMap[msg.sender] == 0) {
                 codesMap[codes[i]].codeAddressMap[codesMap[codes[i]]
                     .addrCount] = msg.sender;
-                codesMap[codes[i]].addrCount++;
+                codesMap[codes[i]].addrCount = codesMap[codes[i]].addrCount.add(1);
 
                 codesMap[codes[i]].addressIndexMap[msg
                     .sender] = codesMap[codes[i]].addrCount;
@@ -108,7 +108,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             for (uint256 n = 0; n < codes.length; n++) {
                 pendingRedeemMap[pendingRedeemCount].user = msg.sender;
                 pendingRedeemMap[pendingRedeemCount].code = codes[n];
-                pendingRedeemCount++;
+                pendingRedeemCount = pendingRedeemCount.add(1);
                 pendingRedeemSearchMap[msg.sender][codes[n]] = 1;
             }
 
@@ -125,7 +125,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             return true;
         } else {
             pendingPrizeWithdrawMap[pendingPrizeWithdrawCount] = msg.sender;
-            pendingPrizeWithdrawCount++;
+            pendingPrizeWithdrawCount = pendingPrizeWithdrawCount.add(1);
             emit PrizeWithdraw(msg.sender, false);
             return false;
         }
@@ -207,7 +207,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             if (validatorIndexMap[currentValidator] == 0) {
                 validatorsMap[validatorsInfo
                     .validatorsCount] = currentValidator;
-                validatorsInfo.validatorsCount++;
+                validatorsInfo.validatorsCount = validatorsInfo.validatorsCount.add(1);
                 validatorIndexMap[currentValidator] = validatorsInfo
                     .validatorsCount;
             }
@@ -407,7 +407,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         subsidyInfo.refundingAddressMap[subsidyInfo.startIndex +
             subsidyInfo.refundingCount] = msg.sender;
-        subsidyInfo.refundingCount++;
+        subsidyInfo.refundingCount = subsidyInfo.refundingCount.add(1);
 
         subsidyInfo.refundingSubsidyAmountMap[msg.sender] = amount;
     }
@@ -516,6 +516,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
     /// @dev Remove user info map.
     function removeUserCodesMap(uint256 valueToRemove, address user) private {
+        require(userInfoMap[user].codesIndexMap[valueToRemove] > 0, "CODE_NOT_EXIST");
+
         // If user have only one code, just remove it
         if (userInfoMap[user].codeCount <= 1) {
             userInfoMap[user].codeCount = 0;
@@ -524,74 +526,42 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             return;
         }
 
-        uint256 i = 0;
-        bool found = false;
-        // If the code has a index
-        if (userInfoMap[user].codesIndexMap[valueToRemove] > 0) {
-            // get code index in map
-            i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
-            found = true;
-        } else {
-            // Should not run here, please contract devs.
-            require(false, "CODE_NOT_EXIST");
-            // for (uint256 m = 0; m < userInfoMap[user].codeCount; m++) {
-            //     if (userInfoMap[user].codesMap[m] == valueToRemove) {
-            //         i = m;
-            //         found = true;
-            //         break;
-            //     }
-            // }
-        }
+        // get code index in map
+        uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
+        // remove the index of record
+        userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+        // save last element to index position
+        userInfoMap[user].codesMap[i] = userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1];
+        // update index of swap element
+        userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] = i + 1;
+        // remove last element
+        userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
 
-        if (found) {
-            // remove the index of record
-            userInfoMap[user].codesIndexMap[valueToRemove] = 0;
-            // save last element to index position
-            userInfoMap[user].codesMap[i] = userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1];
-            // update index of swap element
-            userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] = i + 1;
-            // remove last element
-            userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
-
-            userInfoMap[user].codeCount--;
-        }
+        userInfoMap[user].codeCount = userInfoMap[user].codeCount.sub(1);
     }
 
     function removeCodeInfoMap(uint256 code, address user) private {
+        require(codesMap[code].addressIndexMap[user] > 0, "CODE_NOT_EXIST_2");
+
         if (codesMap[code].addrCount <= 1) {
             codesMap[code].addrCount = 0;
             codesMap[code].codeAddressMap[0] = address(0);
             codesMap[code].addressIndexMap[user] = 0;
             return;
         }
+   
+        uint256 i = codesMap[code].addressIndexMap[user] - 1;
 
-        uint256 i = 0;
-        bool found = false;
-        if (codesMap[code].addressIndexMap[user] > 0) {
-            i = codesMap[code].addressIndexMap[user] - 1;
-            found = true;
-        } else {
-            // Should not run here, please contract devs.
-            require(false, "CODE_NOT_EXIST_2");
-            // for (uint256 m = 0; m < codesMap[code].addrCount; m++) {
-            //     if (codesMap[code].codeAddressMap[i] == user) {
-            //         i = m;
-            //         found = true;
-            //         break;
-            //     }
-            // }
-        }
-
-        if (found) {
-            codesMap[code].addressIndexMap[user] = 0;
-            codesMap[code].codeAddressMap[i] = codesMap[code].codeAddressMap[codesMap[code].addrCount - 1];
-            codesMap[code].addressIndexMap[codesMap[code].codeAddressMap[i]] = i + 1;
-            codesMap[code].codeAddressMap[codesMap[code].addrCount - 1] = address(0);
-            codesMap[code].addrCount--;
-        }
+        codesMap[code].addressIndexMap[user] = 0;
+        codesMap[code].codeAddressMap[i] = codesMap[code].codeAddressMap[codesMap[code].addrCount - 1];
+        codesMap[code].addressIndexMap[codesMap[code].codeAddressMap[i]] = i + 1;
+        codesMap[code].codeAddressMap[codesMap[code].addrCount - 1] = address(0);
+        codesMap[code].addrCount = codesMap[code].addrCount.sub(1);
     }
 
     function removeValidatorMap() private {
+        require(validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0, "VALIDATOR_NOT_EXIST");
+
         if (validatorsInfo.validatorsCount <= 1) {
             validatorsInfo.validatorsCount = 0;
             validatorsMap[0] = address(0);
@@ -599,30 +569,13 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             return;
         }
 
-        uint256 i = 0;
-        bool found = false;
-        if (validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0) {
-            i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
-            found = true;
-        } else {
-            // Should not run here, please contract devs.
-            require(false, "VALIDATOR_NOT_EXIST");
-            // for (uint256 m = 0; m < validatorsInfo.validatorsCount; m++) {
-            //     if (validatorsMap[m] == validatorsInfo.withdrawFromValidator) {
-            //         i = m;
-            //         found = true;
-            //         break;
-            //     }
-            // }
-        }
+        uint256 i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
 
-        if (found) {
-            validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
-            validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount - 1];
-            validatorIndexMap[validatorsMap[i]] = i + 1;
-            validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
-            validatorsInfo.validatorsCount--;
-        }
+        validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
+        validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount - 1];
+        validatorIndexMap[validatorsMap[i]] = i + 1;
+        validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
+        validatorsInfo.validatorsCount = validatorsInfo.validatorsCount.sub(1);
     }
 
     function updateBalance() private returns (bool) {
@@ -677,8 +630,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 subsidyAmountMap[refundingAddress] = subsidyAmountMap[refundingAddress]
                     .sub(singleAmount);
                 subsidyInfo.refundingAddressMap[i] = address(0);
-                subsidyInfo.refundingCount--;
-                subsidyInfo.startIndex++;
+                subsidyInfo.refundingCount = subsidyInfo.refundingCount.sub(1);
+                subsidyInfo.startIndex = subsidyInfo.startIndex.add(1);
                 subsidyInfo.total = subsidyInfo.total.sub(singleAmount);
                 poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                     singleAmount
@@ -709,8 +662,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
 
             if (redeemAddress(codes, pendingRedeemMap[i].user)) {
-                pendingRedeemStartIndex++;
-                pendingRedeemCount--;
+                pendingRedeemStartIndex = pendingRedeemStartIndex.add(1);
+                pendingRedeemCount = pendingRedeemCount.sub(1);
                 pendingRedeemSearchMap[pendingRedeemMap[i]
                     .user][pendingRedeemMap[i].code] = 0;
             } else {
@@ -734,8 +687,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
 
             if (prizeWithdrawAddress(pendingPrizeWithdrawMap[i])) {
-                pendingPrizeWithdrawStartIndex++;
-                pendingPrizeWithdrawCount--;
+                pendingPrizeWithdrawStartIndex = pendingPrizeWithdrawStartIndex.add(1);
+                pendingPrizeWithdrawCount = pendingPrizeWithdrawCount.sub(1);
             } else {
                 return false;
             }
