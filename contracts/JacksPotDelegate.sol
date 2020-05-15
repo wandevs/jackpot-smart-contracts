@@ -510,9 +510,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 }
             }
 
-            if (pendingRedeemSearchMap[msg.sender][codes[i]] > 0) {
-                require(false, "STAKER_CODE_IS_EXITING");
-            }
+            require(pendingRedeemSearchMap[msg.sender][codes[i]] == 0, "STAKER_CODE_IS_EXITING");
         }
     }
 
