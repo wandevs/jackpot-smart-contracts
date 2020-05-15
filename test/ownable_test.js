@@ -1,15 +1,11 @@
 const assert = require('assert');
-const { getContracts, fullTest } = require('./utils');
+const { getContracts } = require('./utils');
 
 contract('Ownable', accounts => {
 
   before(async () => {
 
   });
-
-  if (!fullTest) {
-    return;
-  }
 
   it('should return true when caller is owner', async () => {
     const jackpot = (await getContracts(accounts)).jackpot;

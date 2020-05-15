@@ -7,8 +7,6 @@ const TestBasicStorage = artifacts.require('./test/TestBasicStorage.sol');
 
 const BigNumber = require('bignumber.js');
 
-const fullTest = true;
-
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
 
 const getWeb3 = () => {
@@ -93,7 +91,6 @@ module.exports = {
     getContracts,
     clone,
     getContractsWithoutDelegate,
-    fullTest,
     getTestHelper,
     getTestBasicStorage,
     resAssert,

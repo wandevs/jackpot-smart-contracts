@@ -1,6 +1,6 @@
 const assert = require('assert');
 const lib = require("./lib");
-const { getTestBasicStorage, fullTest } = require('./utils');
+const { getTestBasicStorage } = require('./utils');
 
 
 contract('BasicStorage', async (accounts) => {
@@ -8,10 +8,6 @@ contract('BasicStorage', async (accounts) => {
   before("init contracts", async() => {
     testBasicStorage = await getTestBasicStorage();
   });
-
-  if (!fullTest) {
-    return;
-  }
 
   it ('set/get/delete uint data, it should success', async() => {
     let uintData = "99999999";

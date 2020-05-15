@@ -1,15 +1,11 @@
 const assert = require('assert');
-const { getTestHelper, fullTest } = require('./utils');
+const { getTestHelper } = require('./utils');
 
 contract('ReentrancyGuard', accounts => {
 
     before(async () => {
 
     });
-
-    if (!fullTest) {
-        return;
-    }
 
     it('should failed when call reEntrancyTest storage method', async () => {
         try {
