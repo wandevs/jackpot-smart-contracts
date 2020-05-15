@@ -896,6 +896,9 @@ contract('JacksPot', accounts => {
     ret = await getWeb3().eth.getBalance(testHelper._address);
     assert.equal(ret, '217000000000000000000');
 
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '343000000000000000000');
+
     // delegateOut
     res = await jackpot.methods.runDelegateOut(accounts[0]).send({ from: accounts[1], gas: 1e7 });
     
@@ -909,6 +912,39 @@ contract('JacksPot', accounts => {
     ret = await getWeb3().eth.getBalance(testHelper._address);
     assert.equal(ret, '0');
 
+    res = await jackpot.methods.update().send({from: accounts[1]});
+    resAssert(res, 38355, 'UpdateSuccess');
+
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.demandDepositPool, '560000000000000000000');
+
+    ret = await jackpot.methods.subsidyInfo().call();
+    assert.equal(ret.total, '290000000000000000000');
+
+    res = await jackpot.methods.runDelegateIn().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 177101, 'DelegateIn', 'amount', '189000000000000000000');
+
+    await getWeb3().eth.sendTransaction({from: accounts[0], to:jackpot._address, value:web3.utils.toWei('3500')});
+
+    res = await jackpot.methods.update().send({from: accounts[1]});
+    resAssert(res, 38355, 'UpdateSuccess');
+
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.prizePool, '3500000000000000000000');
+
+    await jackpot.methods.buy([6666], [stake]).send({from: accounts[3], value: stake, gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+    console.log(res.events);
+
+    res = await jackpot.methods.close().send({from:accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+    console.log(res.events);
+    res = await jackpot.methods.lotterySettlement().send({from:accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+    console.log(res.events);
+    res = await jackpot.methods.open().send({from:accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+    console.log(res.events);
 
     //-----------------
     console.log('gas used:', res.gasUsed);
