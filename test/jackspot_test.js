@@ -728,7 +728,7 @@ contract('JacksPot', accounts => {
 
   });
 
-  it('should success WorkFlow', async () => {
+  it.only('should success WorkFlow', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
     const testHelper = await getTestHelper();
     let res = {};
@@ -870,6 +870,13 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.redeem(codes).send({ from: accounts[6], gas: 1e7 });
     resAssert(res, 700234, 'Redeem', 'success', true);
 
+    try {
+      await jackpot.methods.redeem(codes).send({ from: accounts[6], gas: 1e7 });
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+
     codes = [];
     for (let i = 0; i < 50; i++) {
       codes.push(i);
@@ -901,7 +908,7 @@ contract('JacksPot', accounts => {
 
     // delegateOut
     res = await jackpot.methods.runDelegateOut(accounts[0]).send({ from: accounts[1], gas: 1e7 });
-    
+
 
     resAssert(res, 38351, 'DelegateOut', 'amount', '217000000000000000000');
 
@@ -912,7 +919,7 @@ contract('JacksPot', accounts => {
     ret = await getWeb3().eth.getBalance(testHelper._address);
     assert.equal(ret, '0');
 
-    res = await jackpot.methods.update().send({from: accounts[1]});
+    res = await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
     resAssert(res, 38355, 'UpdateSuccess');
 
     ret = await jackpot.methods.poolInfo().call();
@@ -924,27 +931,80 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.runDelegateIn().send({ from: accounts[1], gas: 1e7 });
     resAssert(res, 177101, 'DelegateIn', 'amount', '189000000000000000000');
 
-    await getWeb3().eth.sendTransaction({from: accounts[0], to:jackpot._address, value:web3.utils.toWei('3500')});
+    //----------Test lottery price------------
+    await getWeb3().eth.sendTransaction({ from: accounts[0], to: jackpot._address, value: web3.utils.toWei('3500') });
 
-    res = await jackpot.methods.update().send({from: accounts[1]});
-    resAssert(res, 38355, 'UpdateSuccess');
+    res = await jackpot.methods.update().send({ from: accounts[1] });
+    resAssert(res, 60290, 'UpdateSuccess');
 
     ret = await jackpot.methods.poolInfo().call();
     assert.equal(ret.prizePool, '3500000000000000000000');
 
-    await jackpot.methods.buy([6666], [stake]).send({from: accounts[3], value: stake, gas: 1e7});
-    console.log('gas used:', res.gasUsed);
-    console.log(res.events);
+    res = await jackpot.methods.buy([6666], [stake]).send({ from: accounts[3], value: stake, gas: 1e7 });
+    resAssert(res, 191937, 'Buy', 'stakeAmount', stake);
 
-    res = await jackpot.methods.close().send({from:accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
-    console.log(res.events);
-    res = await jackpot.methods.lotterySettlement().send({from:accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
-    console.log(res.events);
-    res = await jackpot.methods.open().send({from:accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
-    console.log(res.events);
+    res = await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+
+    res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 86062, 'RandomGenerate', 'random', '6666');
+    resAssert(res, 86062, 'LotteryResult', 'prizePool', '3500000000000000000000');
+
+    res = await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
+
+    ret = await jackpot.methods.userInfoMap(accounts[3]).call();
+    assert.equal(ret.prize, "3500000000000000000000");
+
+    let balance = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
+
+    res = await jackpot.methods.prizeWithdraw().send({ from: accounts[3], gas: 1e7 });
+    resAssert(res, 41495, 'PrizeWithdraw', 'success', true);
+
+    let balance2 = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
+
+    assert.equal(Number(balance2) > Number(balance), true);
+
+    assert.equal(Math.abs((Number(balance2) - Number(balance)) - 3500) < 2, true);
+
+    //----------Test lottery price------------
+    await getWeb3().eth.sendTransaction({ from: accounts[0], to: jackpot._address, value: web3.utils.toWei('350000') });
+
+    res = await jackpot.methods.update().send({ from: accounts[1] });
+    resAssert(res, 60290, 'UpdateSuccess');
+
+    ret = await jackpot.methods.poolInfo().call();
+    assert.equal(ret.prizePool, '350000000000000000000000');
+
+    res = await jackpot.methods.buy([6666], [stake]).send({ from: accounts[3], value: stake, gas: 1e7 });
+    resAssert(res, 191937, 'Buy', 'stakeAmount', stake);
+
+    res = await jackpot.methods.close().send({ from: accounts[1], gas: 1e7 });
+
+    res = await jackpot.methods.lotterySettlement().send({ from: accounts[1], gas: 1e7 });
+    resAssert(res, 86062, 'RandomGenerate', 'random', '6666');
+    resAssert(res, 86062, 'LotteryResult', 'prizePool', '350000000000000000000000');
+
+    res = await jackpot.methods.open().send({ from: accounts[1], gas: 1e7 });
+
+    ret = await jackpot.methods.userInfoMap(accounts[3]).call();
+    assert.equal(ret.prize, "350000000000000000000000");
+
+    balance = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
+
+    await jackpot.methods.subsidyOut('290000000000000000000').send({from: accounts[5], gas: 1e7});
+
+    await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
+
+    res = await jackpot.methods.update().send({ from: accounts[1], gas:1e7 });
+    resAssert(res, 60290, 'UpdateSuccess');
+
+    res = await jackpot.methods.prizeWithdraw().send({ from: accounts[3], gas: 1e7 });
+    resAssert(res, 41495, 'PrizeWithdraw', 'success', false);
+
+    balance2 = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
+
+    assert.equal(Number(balance2) < Number(balance), true);
+
+
 
     //-----------------
     console.log('gas used:', res.gasUsed);
