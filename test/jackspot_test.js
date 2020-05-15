@@ -747,6 +747,7 @@ contract('JacksPot', accounts => {
     // set validator
     await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
 
+
     // buy
     res = await jackpot.methods.buy([0], [stake]).send({ from: accounts[2], value: stake, gas: 1e7 });
     resAssert(res, 192250, 'Buy', 'stakeAmount', stake.toString());
@@ -1000,6 +1001,9 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.prizeWithdraw().send({ from: accounts[3], gas: 1e7 });
     resAssert(res, 41495, 'PrizeWithdraw', 'success', false);
 
+    ret = await jackpot.methods.getPendingAmount().call();
+    console.log('getPendingAmount:', ret);
+
     balance2 = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
 
     assert.equal(Number(balance2) < Number(balance), true);
@@ -1014,6 +1018,10 @@ contract('JacksPot', accounts => {
 
     resAssert(res, 60290, 'UpdateSuccess');
 
+    // await jackpot.methods.setValidator(accounts[1]).send({ from: accounts[1], gas: 1e7 });
+    // await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
+    // res = await jackpot.methods.runDelegateOut(accounts[1]).send({from: accounts[1], gas: 1e7});
+
 
     //-----------------
     console.log('gas used:', res.gasUsed);
@@ -1024,6 +1032,6 @@ contract('JacksPot', accounts => {
   });
 
   it("should success 100 address buy 1 code and win", async () => {
-    
+
   });
 });
