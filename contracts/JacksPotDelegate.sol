@@ -15,7 +15,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         _;
     }
 
-    modifier operatorOnly() {
+    modifier onlyOperator() {
         require(msg.sender == operator, "NOT_OPERATOR");
         _;
     }
@@ -54,28 +54,28 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             totalAmount = totalAmount.add(amounts[i]);
 
             //Save stake info
-            if (userInfoMap[msg.sender].codesIndexMap[codes[i]] == 0) {
-                userInfoMap[msg.sender].codesMap[userInfoMap[msg.sender]
+            if (userInfoMap[msg.sender].codeIndexMap[codes[i]] == 0) {
+                userInfoMap[msg.sender].indexCodeMap[userInfoMap[msg.sender]
                     .codeCount] = codes[i];
                 userInfoMap[msg.sender].codeCount = userInfoMap[msg.sender].codeCount.add(1);
                 userInfoMap[msg.sender]
-                    .codesIndexMap[codes[i]] = userInfoMap[msg.sender]
+                    .codeIndexMap[codes[i]] = userInfoMap[msg.sender]
                     .codeCount;
             }
 
-            userInfoMap[msg.sender].codesAmountMap[codes[i]] = userInfoMap[msg
+            userInfoMap[msg.sender].codeAmountMap[codes[i]] = userInfoMap[msg
                 .sender]
-                .codesAmountMap[codes[i]]
+                .codeAmountMap[codes[i]]
                 .add(amounts[i]);
 
             //Save code info
-            if (codesMap[codes[i]].addressIndexMap[msg.sender] == 0) {
-                codesMap[codes[i]].codeAddressMap[codesMap[codes[i]]
+            if (indexCodeMap[codes[i]].addressIndexMap[msg.sender] == 0) {
+                indexCodeMap[codes[i]].indexAddressMap[indexCodeMap[codes[i]]
                     .addrCount] = msg.sender;
-                codesMap[codes[i]].addrCount = codesMap[codes[i]].addrCount.add(1);
+                indexCodeMap[codes[i]].addrCount = indexCodeMap[codes[i]].addrCount.add(1);
 
-                codesMap[codes[i]].addressIndexMap[msg
-                    .sender] = codesMap[codes[i]].addrCount;
+                indexCodeMap[codes[i]].addressIndexMap[msg
+                    .sender] = indexCodeMap[codes[i]].addrCount;
             }
         }
 
@@ -132,7 +132,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev The settlement robot calls this function daily to update the capital pool and settle the pending refund.
-    function update() external operatorOnly nonReentrant {
+    function update() external onlyOperator nonReentrant {
         require(
             poolInfo.demandDepositPool <= address(this).balance,
             "SC_BALANCE_ERROR"
@@ -150,7 +150,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev After the settlement is completed, the settlement robot will call this function to conduct POS delegation to the funds in the capital pool that meet the proportion of the commission.
-    function runDelegateIn() external operatorOnly nonReentrant returns (bool) {
+    function runDelegateIn() external onlyOperator nonReentrant returns (bool) {
         require(
             validatorsInfo.currentValidator != address(0),
             "NO_DEFAULT_VALIDATOR"
@@ -223,17 +223,17 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev This function is called regularly by the robot every 6 morning to open betting.
-    function open() external operatorOnly nonReentrant {
+    function open() external onlyOperator nonReentrant {
         closed = false;
     }
 
     /// @dev This function is called regularly by the robot on 4 nights a week to close bets.
-    function close() external operatorOnly nonReentrant {
+    function close() external onlyOperator nonReentrant {
         closed = true;
     }
 
     /// @dev Lottery settlement function. On the Friday night, the robot calls this function to get random Numbers and complete the lucky draw process.
-    function lotterySettlement() external operatorOnly nonReentrant {
+    function lotterySettlement() external onlyOperator nonReentrant {
         require(closed, "MUST_CLOSE_BEFORE_SETTLEMENT");
 
         uint256 epochId = getEpochId(now, randomPrecompileAddress);
@@ -256,21 +256,21 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         uint256[] memory amounts;
 
-        if (codesMap[winnerCode].addrCount > 0) {
-            winners = new address[](codesMap[winnerCode].addrCount);
-            amounts = new uint256[](codesMap[winnerCode].addrCount);
+        if (indexCodeMap[winnerCode].addrCount > 0) {
+            winners = new address[](indexCodeMap[winnerCode].addrCount);
+            amounts = new uint256[](indexCodeMap[winnerCode].addrCount);
 
             uint256 winnerStakeAmountTotal = 0;
-            for (uint256 i = 0; i < codesMap[winnerCode].addrCount; i++) {
-                winners[i] = codesMap[winnerCode].codeAddressMap[i];
+            for (uint256 i = 0; i < indexCodeMap[winnerCode].addrCount; i++) {
+                winners[i] = indexCodeMap[winnerCode].indexAddressMap[i];
                 winnerStakeAmountTotal = winnerStakeAmountTotal.add(
-                    userInfoMap[winners[i]].codesAmountMap[winnerCode]
+                    userInfoMap[winners[i]].codeAmountMap[winnerCode]
                 );
             }
 
-            for (uint256 j = 0; j < codesMap[winnerCode].addrCount; j++) {
+            for (uint256 j = 0; j < indexCodeMap[winnerCode].addrCount; j++) {
                 amounts[j] = prizePool
-                    .mul(userInfoMap[winners[j]].codesAmountMap[winnerCode])
+                    .mul(userInfoMap[winners[j]].codeAmountMap[winnerCode])
                     .div(winnerStakeAmountTotal);
                 userInfoMap[winners[j]].prize = userInfoMap[winners[j]]
                     .prize
@@ -309,7 +309,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     /// @param validator The validator address.
     function setValidator(address validator)
         external
-        operatorOnly
+        onlyOperator
         nonReentrant
     {
         require(validator != address(0), "INVALID_ADDRESS");
@@ -329,7 +329,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     /// @param validator The validator address.
     function runDelegateOut(address validator)
         external
-        operatorOnly
+        onlyOperator
         nonReentrant
     {
         require(validator != address(0), "INVALID_ADDRESS");
@@ -423,8 +423,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         amounts = new uint256[](cnt);
         exits = new uint256[](cnt);
         for (uint256 i = 0; i < cnt; i++) {
-            codes[i] = userInfoMap[user].codesMap[i];
-            amounts[i] = userInfoMap[user].codesAmountMap[codes[i]];
+            codes[i] = userInfoMap[user].indexCodeMap[i];
+            amounts[i] = userInfoMap[user].codeAmountMap[codes[i]];
             exits[i] = pendingRedeemSearchMap[user][codes[i]];
         }
     }
@@ -464,7 +464,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         ) {
             user = pendingRedeemMap[i].user;
             uint256 code = pendingRedeemMap[i].code;
-            total = total.add(userInfoMap[user].codesAmountMap[code]);
+            total = total.add(userInfoMap[user].codeAmountMap[code]);
         }
     }
 
@@ -516,47 +516,47 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
     /// @dev Remove user info map.
     function removeUserCodesMap(uint256 valueToRemove, address user) private {
-        require(userInfoMap[user].codesIndexMap[valueToRemove] > 0, "CODE_NOT_EXIST");
+        require(userInfoMap[user].codeIndexMap[valueToRemove] > 0, "CODE_NOT_EXIST");
 
         // If user have only one code, just remove it
         if (userInfoMap[user].codeCount <= 1) {
             userInfoMap[user].codeCount = 0;
-            userInfoMap[user].codesMap[0] = 0;
-            userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+            userInfoMap[user].indexCodeMap[0] = 0;
+            userInfoMap[user].codeIndexMap[valueToRemove] = 0;
             return;
         }
 
         // get code index in map
-        uint256 i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
+        uint256 i = userInfoMap[user].codeIndexMap[valueToRemove] - 1;
         // remove the index of record
-        userInfoMap[user].codesIndexMap[valueToRemove] = 0;
+        userInfoMap[user].codeIndexMap[valueToRemove] = 0;
         // save last element to index position
-        userInfoMap[user].codesMap[i] = userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1];
+        userInfoMap[user].indexCodeMap[i] = userInfoMap[user].indexCodeMap[userInfoMap[user].codeCount - 1];
         // update index of swap element
-        userInfoMap[user].codesIndexMap[userInfoMap[user].codesMap[i]] = i + 1;
+        userInfoMap[user].codeIndexMap[userInfoMap[user].indexCodeMap[i]] = i + 1;
         // remove last element
-        userInfoMap[user].codesMap[userInfoMap[user].codeCount - 1] = 0;
+        userInfoMap[user].indexCodeMap[userInfoMap[user].codeCount - 1] = 0;
 
         userInfoMap[user].codeCount = userInfoMap[user].codeCount.sub(1);
     }
 
     function removeCodeInfoMap(uint256 code, address user) private {
-        require(codesMap[code].addressIndexMap[user] > 0, "CODE_NOT_EXIST_2");
+        require(indexCodeMap[code].addressIndexMap[user] > 0, "CODE_NOT_EXIST_2");
 
-        if (codesMap[code].addrCount <= 1) {
-            codesMap[code].addrCount = 0;
-            codesMap[code].codeAddressMap[0] = address(0);
-            codesMap[code].addressIndexMap[user] = 0;
+        if (indexCodeMap[code].addrCount <= 1) {
+            indexCodeMap[code].addrCount = 0;
+            indexCodeMap[code].indexAddressMap[0] = address(0);
+            indexCodeMap[code].addressIndexMap[user] = 0;
             return;
         }
-   
-        uint256 i = codesMap[code].addressIndexMap[user] - 1;
 
-        codesMap[code].addressIndexMap[user] = 0;
-        codesMap[code].codeAddressMap[i] = codesMap[code].codeAddressMap[codesMap[code].addrCount - 1];
-        codesMap[code].addressIndexMap[codesMap[code].codeAddressMap[i]] = i + 1;
-        codesMap[code].codeAddressMap[codesMap[code].addrCount - 1] = address(0);
-        codesMap[code].addrCount = codesMap[code].addrCount.sub(1);
+        uint256 i = indexCodeMap[code].addressIndexMap[user] - 1;
+
+        indexCodeMap[code].addressIndexMap[user] = 0;
+        indexCodeMap[code].indexAddressMap[i] = indexCodeMap[code].indexAddressMap[indexCodeMap[code].addrCount - 1];
+        indexCodeMap[code].addressIndexMap[indexCodeMap[code].indexAddressMap[i]] = i + 1;
+        indexCodeMap[code].indexAddressMap[indexCodeMap[code].addrCount - 1] = address(0);
+        indexCodeMap[code].addrCount = indexCodeMap[code].addrCount.sub(1);
     }
 
     function removeValidatorMap() private {
@@ -704,7 +704,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         for (uint256 i = 0; i < codes.length; i++) {
             totalAmount = totalAmount.add(
-                userInfoMap[user].codesAmountMap[codes[i]]
+                userInfoMap[user].codeAmountMap[codes[i]]
             );
         }
 
@@ -721,7 +721,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             );
 
             for (uint256 m = 0; m < codes.length; m++) {
-                userInfoMap[user].codesAmountMap[codes[m]] = 0;
+                userInfoMap[user].codeAmountMap[codes[m]] = 0;
                 removeUserCodesMap(codes[m], user);
                 removeCodeInfoMap(codes[m], user);
             }

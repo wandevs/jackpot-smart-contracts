@@ -28,7 +28,7 @@ contract JacksPotStorage is LibOwnable, BasicStorage, Types {
     mapping(address => UserInfo) public userInfoMap;
 
     /// @dev map: userCode => CodeInfo struct (code is user's jackpot number)
-    mapping(uint256 => CodeInfo) public codesMap;
+    mapping(uint256 => CodeInfo) public indexCodeMap;
 
     //------Data for pending stake out-----------------------
     uint256 public pendingRedeemStartIndex;

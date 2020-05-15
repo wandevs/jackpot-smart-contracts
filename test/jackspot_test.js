@@ -79,7 +79,7 @@ contract('JacksPot', accounts => {
     // console.log(ret);
     assert.equal(ret.amounts[0], '20000000000000000000');
 
-    ret = await jackpot.methods.codesMap(1111).call();
+    ret = await jackpot.methods.indexCodeMap(1111).call();
     assert.equal(ret, '2');
 
     res = await jackpot.methods.redeem(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
@@ -728,7 +728,7 @@ contract('JacksPot', accounts => {
 
   });
 
-  it.only('should success WorkFlow', async () => {
+  it('should success WorkFlow', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
     const testHelper = await getTestHelper();
     let res = {};

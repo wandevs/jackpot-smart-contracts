@@ -5,9 +5,9 @@ contract Types {
     struct UserInfo {
         uint256 prize;
         uint256 codeCount;
-        mapping(uint256 => uint256) codesMap;           // map: index => userCode (index start from 0)
-        mapping(uint256 => uint256) codesIndexMap;      // map: userCode => index
-        mapping(uint256 => uint256) codesAmountMap;     // map: userCode => amount
+        mapping(uint256 => uint256) indexCodeMap;      // map: index => userCode (index start from 0)
+        mapping(uint256 => uint256) codeIndexMap;      // map: userCode => index
+        mapping(uint256 => uint256) codeAmountMap;     // map: userCode => amount
     }
 
     struct PendingRedeem {
@@ -17,7 +17,7 @@ contract Types {
 
     struct CodeInfo {
         uint256 addrCount;
-        mapping(uint256 => address) codeAddressMap;     // map: index => userAddress (index start from 0)
+        mapping(uint256 => address) indexAddressMap;    // map: index => userAddress (index start from 0)
         mapping(address => uint256) addressIndexMap;    // map: userAddress => index
     }
 
