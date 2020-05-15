@@ -503,6 +503,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
         //check codes
         for (uint256 i = 0; i < length; i++) {
+            require(userInfoMap[msg.sender].codeIndexMap[codes[i]] > 0, "CODE_NOT_EXIST");
             require(codes[i] < maxDigital, "OUT_OF_MAX_DIGITAL");
             for (uint256 m = 0; m < length; m++) {
                 if (i != m) {
@@ -515,65 +516,53 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev Remove user info map.
-    function removeUserCodesMap(uint256 valueToRemove, address user) private {
-        require(userInfoMap[user].codeIndexMap[valueToRemove] > 0, "CODE_NOT_EXIST");
+    function removeUserCodesMap(uint256 codeToRemove, address user) private {
+        require(userInfoMap[user].codeIndexMap[codeToRemove] > 0, "CODE_NOT_EXIST");
+        require(userInfoMap[user].codeCount != 0, "CODE_COUNT_IS_ZERO");
 
-        // If user have only one code, just remove it
-        if (userInfoMap[user].codeCount <= 1) {
-            userInfoMap[user].codeCount = 0;
-            userInfoMap[user].indexCodeMap[0] = 0;
-            userInfoMap[user].codeIndexMap[valueToRemove] = 0;
-            return;
+        if (userInfoMap[user].codeCount > 1) {
+            // get code index in map
+            uint256 i = userInfoMap[user].codeIndexMap[codeToRemove] - 1;
+            // save last element to index position
+            userInfoMap[user].indexCodeMap[i] = userInfoMap[user].indexCodeMap[userInfoMap[user].codeCount - 1];
+            // update index of swap element
+            userInfoMap[user].codeIndexMap[userInfoMap[user].indexCodeMap[i]] = i + 1;
         }
 
-        // get code index in map
-        uint256 i = userInfoMap[user].codeIndexMap[valueToRemove] - 1;
         // remove the index of record
-        userInfoMap[user].codeIndexMap[valueToRemove] = 0;
-        // save last element to index position
-        userInfoMap[user].indexCodeMap[i] = userInfoMap[user].indexCodeMap[userInfoMap[user].codeCount - 1];
-        // update index of swap element
-        userInfoMap[user].codeIndexMap[userInfoMap[user].indexCodeMap[i]] = i + 1;
+        userInfoMap[user].codeIndexMap[codeToRemove] = 0;
+
         // remove last element
         userInfoMap[user].indexCodeMap[userInfoMap[user].codeCount - 1] = 0;
-
         userInfoMap[user].codeCount = userInfoMap[user].codeCount.sub(1);
     }
 
     function removeCodeInfoMap(uint256 code, address user) private {
         require(indexCodeMap[code].addressIndexMap[user] > 0, "CODE_NOT_EXIST_2");
+        require(indexCodeMap[code].addrCount != 0, "ADDRESS_COUNT_IS_ZERO");
 
-        if (indexCodeMap[code].addrCount <= 1) {
-            indexCodeMap[code].addrCount = 0;
-            indexCodeMap[code].indexAddressMap[0] = address(0);
-            indexCodeMap[code].addressIndexMap[user] = 0;
-            return;
+        if (indexCodeMap[code].addrCount > 1) {
+            uint256 i = indexCodeMap[code].addressIndexMap[user] - 1;
+            indexCodeMap[code].indexAddressMap[i] = indexCodeMap[code].indexAddressMap[indexCodeMap[code].addrCount - 1];
+            indexCodeMap[code].addressIndexMap[indexCodeMap[code].indexAddressMap[i]] = i + 1;
         }
 
-        uint256 i = indexCodeMap[code].addressIndexMap[user] - 1;
-
         indexCodeMap[code].addressIndexMap[user] = 0;
-        indexCodeMap[code].indexAddressMap[i] = indexCodeMap[code].indexAddressMap[indexCodeMap[code].addrCount - 1];
-        indexCodeMap[code].addressIndexMap[indexCodeMap[code].indexAddressMap[i]] = i + 1;
         indexCodeMap[code].indexAddressMap[indexCodeMap[code].addrCount - 1] = address(0);
         indexCodeMap[code].addrCount = indexCodeMap[code].addrCount.sub(1);
     }
 
     function removeValidatorMap() private {
         require(validatorIndexMap[validatorsInfo.withdrawFromValidator] > 0, "VALIDATOR_NOT_EXIST");
+        require(validatorsInfo.validatorsCount != 0, "VALIDATOR_COUNT_IS_ZERO");
 
-        if (validatorsInfo.validatorsCount <= 1) {
-            validatorsInfo.validatorsCount = 0;
-            validatorsMap[0] = address(0);
-            validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
-            return;
+        if (validatorsInfo.validatorsCount > 1) {
+            uint256 i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
+            validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount - 1];
+            validatorIndexMap[validatorsMap[i]] = i + 1;
         }
 
-        uint256 i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
-
         validatorIndexMap[validatorsInfo.withdrawFromValidator] = 0;
-        validatorsMap[i] = validatorsMap[validatorsInfo.validatorsCount - 1];
-        validatorIndexMap[validatorsMap[i]] = i + 1;
         validatorsMap[validatorsInfo.validatorsCount - 1] = address(0);
         validatorsInfo.validatorsCount = validatorsInfo.validatorsCount.sub(1);
     }
