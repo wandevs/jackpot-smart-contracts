@@ -532,13 +532,15 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             i = userInfoMap[user].codesIndexMap[valueToRemove] - 1;
             found = true;
         } else {
-            for (uint256 m = 0; m < userInfoMap[user].codeCount; m++) {
-                if (userInfoMap[user].codesMap[m] == valueToRemove) {
-                    i = m;
-                    found = true;
-                    break;
-                }
-            }
+            // Should not run here, please contract devs.
+            require(false, "CODE_NOT_EXIST");
+            // for (uint256 m = 0; m < userInfoMap[user].codeCount; m++) {
+            //     if (userInfoMap[user].codesMap[m] == valueToRemove) {
+            //         i = m;
+            //         found = true;
+            //         break;
+            //     }
+            // }
         }
 
         if (found) {
@@ -569,13 +571,15 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             i = codesMap[code].addressIndexMap[user] - 1;
             found = true;
         } else {
-            for (uint256 m = 0; m < codesMap[code].addrCount; m++) {
-                if (codesMap[code].codeAddressMap[i] == user) {
-                    i = m;
-                    found = true;
-                    break;
-                }
-            }
+            // Should not run here, please contract devs.
+            require(false, "CODE_NOT_EXIST_2");
+            // for (uint256 m = 0; m < codesMap[code].addrCount; m++) {
+            //     if (codesMap[code].codeAddressMap[i] == user) {
+            //         i = m;
+            //         found = true;
+            //         break;
+            //     }
+            // }
         }
 
         if (found) {
@@ -601,13 +605,15 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             i = validatorIndexMap[validatorsInfo.withdrawFromValidator] - 1;
             found = true;
         } else {
-            for (uint256 m = 0; m < validatorsInfo.validatorsCount; m++) {
-                if (validatorsMap[m] == validatorsInfo.withdrawFromValidator) {
-                    i = m;
-                    found = true;
-                    break;
-                }
-            }
+            // Should not run here, please contract devs.
+            require(false, "VALIDATOR_NOT_EXIST");
+            // for (uint256 m = 0; m < validatorsInfo.validatorsCount; m++) {
+            //     if (validatorsMap[m] == validatorsInfo.withdrawFromValidator) {
+            //         i = m;
+            //         found = true;
+            //         break;
+            //     }
+            // }
         }
 
         if (found) {

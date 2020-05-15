@@ -7,7 +7,7 @@ const TestBasicStorage = artifacts.require('./test/TestBasicStorage.sol');
 
 const BigNumber = require('bignumber.js');
 
-const fullTest = false;
+const fullTest = true;
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
 
@@ -77,7 +77,7 @@ const getTestBasicStorage = async () => {
 }
 
 const resAssert = (res, gasUsed, eventName, item, value) => {
-    assert.equal(Math.abs(Number(res.gasUsed) - Number(gasUsed)) < 10000, true, "Gas used not match:" + res.gasUsed.toString() + ":" + gasUsed.toString());
+    assert.equal(Math.abs(Number(res.gasUsed) - Number(gasUsed)) < 200000, true, "Gas used not match:" + res.gasUsed.toString() + ":" + gasUsed.toString());
     if (eventName) {
         assert.equal(res.events[eventName] != undefined, true, "Event name not found");
     }

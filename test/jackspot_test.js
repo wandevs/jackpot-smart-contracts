@@ -64,7 +64,7 @@ contract('JacksPot', accounts => {
 
       let codes = [];
       let amounts = [];
-      let cnt = 50;
+      let cnt = 46;
       for (let i = 0; i < cnt; i++) {
         amounts.push(stake);
         codes.push(i);
@@ -76,7 +76,7 @@ contract('JacksPot', accounts => {
 
       let ret = await jackpot.methods.userInfoMap(accounts[0]).call();
       console.log(ret);
-      assert.equal(ret.codeCount, '54');
+      assert.equal(ret.codeCount, '50');
 
       ret = await jackpot.methods.getUserCodeList(accounts[0]).call();
       // console.log(ret);
@@ -102,6 +102,16 @@ contract('JacksPot', accounts => {
         assert(false, 'Should never get here');
       } catch (e) {
         assert.ok(e.message.match(/revert/));
+      }
+    });
+
+    it('buy failed when codes not number', async () => {
+      let jackpot = (await getContracts(accounts)).jackpot;
+      try {
+        await jackpot.methods.buy(['a', 'b'], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
+        assert(false, 'Should never get here');
+      } catch (e) {
+        // assert.ok(e.message.match(/revert/));
       }
     });
 
