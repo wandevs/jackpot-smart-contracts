@@ -728,7 +728,7 @@ contract('JacksPot', accounts => {
 
   });
 
-  it.only('should success WorkFlow', async () => {
+  it('should success WorkFlow', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
     const testHelper = await getTestHelper();
     let res = {};
@@ -1004,6 +1004,15 @@ contract('JacksPot', accounts => {
 
     assert.equal(Number(balance2) < Number(balance), true);
 
+    res = await jackpot.methods.update().send({ from: accounts[1], gas:1e7 });
+
+    res = await jackpot.methods.runDelegateOut(accounts[0]).send({from: accounts[1], gas: 1e7});
+
+    resAssert(res, 38351, 'DelegateOut', 'amount', '245203000000000000000000');
+
+    res = await jackpot.methods.update().send({ from: accounts[1], gas:1e7 });
+
+    resAssert(res, 60290, 'UpdateSuccess');
 
 
     //-----------------
@@ -1014,4 +1023,7 @@ contract('JacksPot', accounts => {
     console.log('poolInfo:', ret);
   });
 
+  it("should success 100 address buy 1 code and win", async () => {
+    
+  });
 });
