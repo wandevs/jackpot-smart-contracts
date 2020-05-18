@@ -1042,11 +1042,11 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.runDelegateOut(accounts[1]).send({from: accounts[1], gas: 1e7});
     await jackpot.methods.update().send({from:accounts[1], gas:1e7});
     //-----------------
-    console.log('gas used:', res.gasUsed);
-    console.log(res.events);
+    // console.log('gas used:', res.gasUsed);
+    // console.log(res.events);
 
-    ret = await jackpot.methods.poolInfo().call();
-    console.log('poolInfo:', ret);
+    // ret = await jackpot.methods.poolInfo().call();
+    // console.log('poolInfo:', ret);
   });
 
   it("should success update when poolInfo.demandDepositPool <= subsidyInfo.total ", async () => {
@@ -1178,10 +1178,24 @@ contract('JacksPot', accounts => {
     await jackpot.methods.close().send({from: accounts[1], gas: 1e7});
     res = await jackpot.methods.lotterySettlement().send({from: accounts[1], gas: 1e7});
     console.log('gas used:', res.gasUsed);
+    console.log(res.events);
     await jackpot.methods.open().send({from: accounts[1], gas: 1e7});
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
     console.log('gas used:', res.gasUsed);
 
+    for (let i=0; i<100; i++) {
+      await jackpot.methods.subsidyIn().send({from: accounts[i], value: stake, gas: 1e7});
+    }
+
+    res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+
+    for (let i=0; i<100; i++) {
+      await jackpot.methods.subsidyOut(stake).send({from: accounts[i], gas: 1e7});
+    }
+
+    res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
 
   });
 });
