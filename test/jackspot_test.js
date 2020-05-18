@@ -1017,18 +1017,139 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.update().send({ from: accounts[1], gas:1e7 });
 
     resAssert(res, 60290, 'UpdateSuccess');
+    //---------------------------------------------
+    await jackpot.methods.setValidator(accounts[1]).send({ from: accounts[1], gas: 1e7 });
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
+    await jackpot.methods.update().send({from:accounts[1], gas:1e7});
 
-    // await jackpot.methods.setValidator(accounts[1]).send({ from: accounts[1], gas: 1e7 });
-    // await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
-    // res = await jackpot.methods.runDelegateOut(accounts[1]).send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.setValidator(accounts[2]).send({ from: accounts[1], gas: 1e7 });
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
+    await jackpot.methods.update().send({from:accounts[1], gas:1e7});
+
+    await jackpot.methods.setValidator(accounts[3]).send({ from: accounts[1], gas: 1e7 });
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
+    await jackpot.methods.update().send({from:accounts[1], gas:1e7});
+
+    await jackpot.methods.setValidator(accounts[4]).send({ from: accounts[1], gas: 1e7 });
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
+    await jackpot.methods.update().send({from:accounts[1], gas:1e7});
 
 
+    res = await jackpot.methods.runDelegateOut(accounts[1]).send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.update().send({from:accounts[1], gas:1e7});
     //-----------------
     console.log('gas used:', res.gasUsed);
     console.log(res.events);
 
     ret = await jackpot.methods.poolInfo().call();
     console.log('poolInfo:', ret);
+  });
+
+  it("should success update when poolInfo.demandDepositPool <= subsidyInfo.total ", async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    const testHelper = await getTestHelper();
+    let res = {};
+    let ret = {};
+    // Set operator
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+
+    // Set test pos sc address
+    await jackpot.methods.setRandomPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    await jackpot.methods.setPosPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    ret = await jackpot.methods.posPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+    ret = await jackpot.methods.randomPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+
+    // set validator
+    await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+
+
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake300]).send({from: accounts[2], value: stake300, gas: 1e7});
+
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
+
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+
+    await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
+
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+  });
+
+  it("should failed settlement when not closed", async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    const testHelper = await getTestHelper();
+    let res = {};
+    let ret = {};
+    // Set operator
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+
+    // Set test pos sc address
+    await jackpot.methods.setRandomPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    await jackpot.methods.setPosPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    ret = await jackpot.methods.posPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+    ret = await jackpot.methods.randomPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+
+    // set validator
+    await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+
+    try {
+      await jackpot.methods.lotterySettlement().send({from: accounts[1], gas: 1e7});
+      assert(false, 'Should never get here');
+    } catch (e) {
+      assert.ok(e.message.match(/revert/));
+    }
+  });
+
+  it("test for coverage percent", async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    const testHelper = await getTestHelper();
+    let res = {};
+    let ret = {};
+    // Set operator
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+
+    // Set test pos sc address
+    await jackpot.methods.setRandomPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    await jackpot.methods.setPosPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    ret = await jackpot.methods.posPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+    ret = await jackpot.methods.randomPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+
+    // set validator
+    await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+
+    await jackpot.methods.buy([1111], [stake500]).send({from: accounts[3], value: stake500, gas: 1e7});
+    await jackpot.methods.buy([1111], [stake4]).send({from: accounts[4], value: stake4, gas: 1e7});
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.redeem([1111]).send({from: accounts[4], gas: 1e7});
+
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+
   });
 
   it("should success 100 address buy 1 code and win", async () => {

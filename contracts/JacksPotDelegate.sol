@@ -52,7 +52,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             require(amounts[i] % minAmount == 0, "AMOUNT_MUST_TIMES_10");
             require(codes[i] < maxDigital, "OUT_OF_MAX_DIGITAL");
             require(pendingRedeemSearchMap[msg.sender][codes[i]] == 0, "BUYING_CODE_IS_EXITING");
-            
+
             totalAmount = totalAmount.add(amounts[i]);
 
             //Save stake info
@@ -162,12 +162,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             return true;
         }
 
-        if (
-            poolInfo.delegatePool.add(poolInfo.demandDepositPool) <=
-            subsidyInfo.total
-        ) {
-            return true;
-        }
+        require(poolInfo.delegatePool.add(poolInfo.demandDepositPool) >= subsidyInfo.total, "AMOUNT_ERROR");
 
         address currentValidator = validatorsInfo.currentValidator;
 
