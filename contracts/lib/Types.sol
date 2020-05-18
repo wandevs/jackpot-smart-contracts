@@ -49,11 +49,11 @@ contract Types {
         uint256[] amounts
     );
 
-    event Redeem(address indexed user, bool indexed success, uint256[] codes);
+    event Redeem(address indexed user, bool indexed success, uint256[] codes, uint256 amount);
 
     event GasNotEnough();
 
-    event PrizeWithdraw(address indexed user, bool indexed success);
+    event PrizeWithdraw(address indexed user, bool indexed success, uint256 amount);
 
     event UpdateSuccess();
 
@@ -74,4 +74,6 @@ contract Types {
     event DelegateOut(address indexed validator, uint256 amount);
 
     event DelegateIn(address indexed validator, uint256 amount);
+
+    event SubsidyIn(address indexed sender, uint256 amount);
 }

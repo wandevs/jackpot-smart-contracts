@@ -104,7 +104,6 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         checkRedeemValue(codes);
 
         if (redeemAddress(codes, msg.sender)) {
-            emit Redeem(msg.sender, true, codes);
             return true;
         } else {
             for (uint256 n = 0; n < codes.length; n++) {
@@ -114,7 +113,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
                 pendingRedeemSearchMap[msg.sender][codes[n]] = 1;
             }
 
-            emit Redeem(msg.sender, false, codes);
+            emit Redeem(msg.sender, false, codes, 0);
             return false;
         }
     }
@@ -123,12 +122,11 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     function prizeWithdraw() external notClosed nonReentrant returns (bool) {
         require(userInfoMap[msg.sender].prize > 0, "NO_PRIZE_TO_WITHDRAW");
         if (prizeWithdrawAddress(msg.sender)) {
-            emit PrizeWithdraw(msg.sender, true);
             return true;
         } else {
             pendingPrizeWithdrawMap[pendingPrizeWithdrawCount] = msg.sender;
             pendingPrizeWithdrawCount = pendingPrizeWithdrawCount.add(1);
-            emit PrizeWithdraw(msg.sender, false);
+            emit PrizeWithdraw(msg.sender, false, 0);
             return false;
         }
     }
@@ -382,6 +380,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         );
         subsidyInfo.total = subsidyInfo.total.add(msg.value);
         poolInfo.demandDepositPool = poolInfo.demandDepositPool.add(msg.value);
+        emit SubsidyIn(msg.sender, msg.value);
     }
 
     /// @dev Apply for subsidy refund function. If the current pool is sufficient for application of subsidy, the refund will be made on the daily settlement.
@@ -713,6 +712,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
 
             user.transfer(totalAmount);
+            emit Redeem(user, true, codes, totalAmount);
             return true;
         }
         return false;
@@ -733,7 +733,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             userInfoMap[user].prize = 0;
 
             user.transfer(totalAmount);
-
+            emit PrizeWithdraw(msg.sender, true, totalAmount);
             return true;
         }
         return false;
