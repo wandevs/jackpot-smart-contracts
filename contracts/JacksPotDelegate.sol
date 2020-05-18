@@ -390,6 +390,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             "SUBSIDY_AMOUNT_NOT_ENOUGH"
         );
 
+        require(amount > 0, "ZERO_AMOUNT_NOT_ALLOW");
+
         for (
             uint256 i = subsidyInfo.startIndex;
             i < subsidyInfo.startIndex + subsidyInfo.refundingCount;
