@@ -1153,6 +1153,35 @@ contract('JacksPot', accounts => {
   });
 
   it("should success 100 address buy 1 code and win", async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    const testHelper = await getTestHelper();
+    let res = {};
+    let ret = {};
+    // Set operator
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+
+    // Set test pos sc address
+    await jackpot.methods.setRandomPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    await jackpot.methods.setPosPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    ret = await jackpot.methods.posPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+    ret = await jackpot.methods.randomPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+
+    // set validator
+    await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+
+    for (let i=0; i<100; i++) {
+      await jackpot.methods.buy([6666], [stake]).send({from:accounts[i], value: stake, gas: 1e7});
+    }
+
+    await jackpot.methods.close().send({from: accounts[1], gas: 1e7});
+    res = await jackpot.methods.lotterySettlement().send({from: accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+    await jackpot.methods.open().send({from: accounts[1], gas: 1e7});
+    res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
+    console.log('gas used:', res.gasUsed);
+
 
   });
 });

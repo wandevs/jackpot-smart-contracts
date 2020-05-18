@@ -7,6 +7,7 @@ module.exports = {
         'test/TestBasicStorage.sol'],
     providerOptions: {
         default_balance_ether: 1000000,
+        total_accounts: 100,
         hardfork: "byzantium"
     }
 };
