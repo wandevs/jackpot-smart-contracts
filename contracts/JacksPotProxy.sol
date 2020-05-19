@@ -14,7 +14,7 @@ contract JacksPotProxy is JacksPotStorage, ReentrancyGuard, Proxy {
 
     /// @notice                           function for setting or upgrading JacksPotDelegate address by owner
     /// @param impl                       JacksPotDelegate contract address
-    function upgradeTo(address impl) public onlyOwner {
+    function upgradeTo(address impl) external onlyOwner {
         require(impl != address(0), "Cannot upgrade to invalid address");
         require(impl != _implementation, "Cannot upgrade to the same implementation");
         _implementation = impl;

@@ -26,7 +26,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     function() public payable {}
 
     /// @dev This function will set default value.
-    function init() public onlyOwner {
+    function init() external onlyOwner {
         poolInfo.delegatePercent = 700; // 70%
         maxDigital = 10000; // 0000~9999
         closed = false;
