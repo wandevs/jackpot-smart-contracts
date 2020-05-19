@@ -11,7 +11,7 @@ contract('ReentrancyGuard', accounts => {
         try {
             const testHelper = await getTestHelper();
             let res = await testHelper.methods.reentrancyTest().send({ from: accounts[0], value: web3.utils.toWei("10") });
-            console.log(res);
+            // console.log(res);
 
             console.log(await testHelper.methods.testBalance().call());
 

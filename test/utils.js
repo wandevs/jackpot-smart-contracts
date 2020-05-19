@@ -53,7 +53,7 @@ const getContractsWithoutDelegate = async (accounts) => {
 
     const jackpot = await getContractAt(JacksPotDelegate, jackpotProxy._address);
 
-    await jackpot.methods.init().send({ from: accounts[0], gas: 10000000 });
+    // await jackpot.methods.init().send({ from: accounts[0], gas: 10000000 });
 
     return {
         jackpot,
