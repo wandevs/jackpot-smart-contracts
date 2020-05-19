@@ -1294,7 +1294,7 @@ contract('JacksPot', accounts => {
   });
 
   // success in yarn test but failed in yarn coverage.
-  it.skip("should partly success when gas not enough", async () => {
+  it.skip("should partly success when subsidyRefund gas not enough", async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
     const testHelper = await getTestHelper();
     let res = {};
@@ -1331,5 +1331,40 @@ contract('JacksPot', accounts => {
     console.log('gas used:', res.gasUsed);
     console.log('event:', res.events);
     console.log('event cnt:', res.events.SubsidyRefund.length);
+  });
+
+  it("should partly success when redeemPendingRefund gas not enough", async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    const testHelper = await getTestHelper();
+    let res = {};
+    let ret = {};
+    // Set operator
+    await jackpot.methods.setOperator(accounts[1]).send({ from: accounts[0], gas: 1e7 });
+
+    // Set test pos sc address
+    await jackpot.methods.setRandomPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    await jackpot.methods.setPosPrecompileAddress(testHelper._address).send({ from: accounts[0], gas: 1e7 });
+    ret = await jackpot.methods.posPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+    ret = await jackpot.methods.randomPrecompileAddress().call();
+    assert.equal(ret, testHelper._address);
+
+    // set validator
+    await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
+    for (let i=0; i<100; i++) {
+      await jackpot.methods.buy([1], [stake500]).send({from: accounts[i], value: stake500, gas: 1e7});
+    }
+
+    await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
+
+    for (let i=0; i<100; i++) {
+      await jackpot.methods.redeem([1]).send({from: accounts[i], gas: 1e7});
+    }
+
+    res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.runDelegateOut(accounts[0]).send({from: accounts[1], gas: 1e7});
+    res = await jackpot.methods.update().send({from: accounts[1], gas: 2093986});
+    console.log('gas used:', res.gasUsed);
+    // console.log('event:', res.events);
   });
 });
