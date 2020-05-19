@@ -19,7 +19,7 @@ contract JacksPotStorage is LibOwnable, BasicStorage, Types {
 
     uint256 minAmount = 10 ether;
 
-    uint256 minGasLeft = 20000;
+    uint256 minGasLeft = 100000;
 
     /// @dev POS delegate require at least 100 WAN for first delegateIn.
     uint256 firstDelegateMinValue = 100 ether;

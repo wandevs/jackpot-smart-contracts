@@ -643,7 +643,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             uint256[] memory codes = new uint256[](1);
             codes[0] = pendingRedeemMap[i].code;
 
-            if (gasleft() < minGasLeft * 5) {
+            if (gasleft() < minGasLeft) {
                 emit GasNotEnough();
                 return false;
             }
