@@ -33,6 +33,18 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         feeRate = 0;
         posPrecompileAddress = address(0xda);
         randomPrecompileAddress = address(0x262);
+        maxCount = 50;
+        minAmount = 10 ether;
+        minGasLeft = 100000;
+        firstDelegateMinValue = 100 ether;
+    }
+
+    /// @dev config some default value
+    function config(uint256 _maxCount, uint256 _minAmount, uint256 _minGasLeft, uint256 _firstDelegateMinValue) external onlyOwner {
+        maxCount = _maxCount;
+        minAmount = _minAmount;
+        minGasLeft = _minGasLeft;
+        firstDelegateMinValue = _firstDelegateMinValue;
     }
 
     /// @dev User betting function. We do not support smart contract call for security.(DoS with revert)

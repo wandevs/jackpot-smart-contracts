@@ -1428,4 +1428,9 @@ contract('JacksPot', accounts => {
     // console.log('event:', res.events);
     resAssert(res, 539414, 'GasNotEnough');
   });
+
+  it("should success for owner config", async () => {
+    let jackpot = (await getContracts(accounts)).jackpot;
+    await jackpot.methods.config(40,100,1000000,500).send({from: accounts[0], gas: 1e7});
+  });
 });

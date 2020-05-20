@@ -15,14 +15,14 @@ contract JacksPotStorage is LibOwnable, BasicStorage, Types {
     uint256 public constant DIVISOR = 1000;
 
     /// @dev max count of user code in one address.
-    uint256 maxCount = 50;
+    uint256 public maxCount = 50;
 
-    uint256 minAmount = 10 ether;
+    uint256 public minAmount = 10 ether;
 
-    uint256 minGasLeft = 100000;
+    uint256 public minGasLeft = 100000;
 
     /// @dev POS delegate require at least 100 WAN for first delegateIn.
-    uint256 firstDelegateMinValue = 100 ether;
+    uint256 public firstDelegateMinValue = 100 ether;
 
     /// @dev map: userAddress => UserInfo struct
     mapping(address => UserInfo) public userInfoMap;
@@ -70,19 +70,19 @@ contract JacksPotStorage is LibOwnable, BasicStorage, Types {
     mapping(address => uint256) public subsidyAmountMap;
 
     /// @dev Share a portion of the prize pool to own as an operating expense, 0 by default.
-    uint256 public feeRate;
+    uint256 public feeRate = 0;
 
     address public operator;
 
-    bool public closed;
+    bool public closed = false;
 
-    uint256 public maxDigital;
+    uint256 public maxDigital = 10000;
 
     uint256 public currentRandom;
 
     /// @dev address for POS delegateIn delegateOut
-    address public posPrecompileAddress;
+    address public posPrecompileAddress = address(0xda);
 
     /// @dev address for random number get
-    address public randomPrecompileAddress;
+    address public randomPrecompileAddress = address(0x262);
 }
