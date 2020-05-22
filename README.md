@@ -1,7 +1,5 @@
 # Jack's Pot Smart Contract
 
-[![Coverage Status](https://coveralls.io/repos/github/wandevs/jackpot-smart-contracts/badge.svg?branch=master)](https://coveralls.io/github/wandevs/jackpot-smart-contracts?branch=master)
-
 Jack’s Pot is a no-loss lottery game built on Wanchain.
 
 To play the game, users stake one or more tickets with a four digit number on each ticket.
