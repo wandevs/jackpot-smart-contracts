@@ -119,8 +119,8 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             return true;
         } else {
             for (uint256 n = 0; n < codes.length; n++) {
-                pendingRedeemMap[pendingRedeemCount].user = msg.sender;
-                pendingRedeemMap[pendingRedeemCount].code = codes[n];
+                pendingRedeemMap[pendingRedeemStartIndex + pendingRedeemCount].user = msg.sender;
+                pendingRedeemMap[pendingRedeemStartIndex + pendingRedeemCount].code = codes[n];
                 pendingRedeemCount = pendingRedeemCount.add(1);
                 pendingRedeemSearchMap[msg.sender][codes[n]] = 1;
             }
@@ -136,7 +136,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         if (prizeWithdrawAddress(msg.sender)) {
             return true;
         } else {
-            pendingPrizeWithdrawMap[pendingPrizeWithdrawCount] = msg.sender;
+            pendingPrizeWithdrawMap[pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount] = msg.sender;
             pendingPrizeWithdrawCount = pendingPrizeWithdrawCount.add(1);
             emit PrizeWithdraw(msg.sender, false, 0);
             return false;

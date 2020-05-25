@@ -1433,4 +1433,16 @@ contract('JacksPot', accounts => {
     let jackpot = (await getContracts(accounts)).jackpot;
     await jackpot.methods.config(40,100,1000000,500).send({from: accounts[0], gas: 1e7});
   });
+
+  //buy:
+  //TODO: Amount overflow;amount == 0;
+  //Codes same;
+  //codes length != amount length;
+  //empty array;
+  //code: 9999
+
+  //redeem:
+  //not exist code;
+  //same code;
+  //border value(2); normal value; error value;
 });
