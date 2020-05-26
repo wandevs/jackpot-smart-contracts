@@ -136,6 +136,9 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         if (prizeWithdrawAddress(msg.sender)) {
             return true;
         } else {
+            for (uint256 i = pendingPrizeWithdrawStartIndex; i < pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount; i++) {
+                require(pendingPrizeWithdrawMap[i] != msg.sender, "ALREADY_WITHDRAWING");
+            }
             pendingPrizeWithdrawMap[pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount] = msg.sender;
             pendingPrizeWithdrawCount = pendingPrizeWithdrawCount.add(1);
             emit PrizeWithdraw(msg.sender, false, 0);
@@ -439,6 +442,20 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
         }
     }
 
+    /// @dev Get a user's codes and amounts;
+    function isUserPrizeWithdrawPending(address user)
+        external
+        view
+        returns (bool)
+    {
+        for (uint256 i = pendingPrizeWithdrawStartIndex; i < pendingPrizeWithdrawStartIndex + pendingPrizeWithdrawCount; i++) {
+            if(pendingPrizeWithdrawMap[i] == msg.sender) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// @dev get all the pending out amount
     function getPendingAmount() external view returns (uint256 total) {
         address user;
@@ -624,16 +641,29 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
             }
 
             if (poolInfo.demandDepositPool >= singleAmount) {
+                if (subsidyAmountMap[refundingAddress] == 0 || singleAmount == 0 || subsidyAmountMap[refundingAddress] < singleAmount) {
+                    // remove Bad item
+                    subsidyInfo.refundingAddressMap[i] = address(0);
+                    subsidyInfo.refundingCount = subsidyInfo.refundingCount.sub(1);
+                    subsidyInfo.startIndex = subsidyInfo.startIndex.add(1);
+                    subsidyInfo.refundingSubsidyAmountMap[refundingAddress] = 0;
+                    continue;
+                }
+
+                // Sub address subsidy amount
                 subsidyAmountMap[refundingAddress] = subsidyAmountMap[refundingAddress]
                     .sub(singleAmount);
+                // Remove item
                 subsidyInfo.refundingAddressMap[i] = address(0);
                 subsidyInfo.refundingCount = subsidyInfo.refundingCount.sub(1);
                 subsidyInfo.startIndex = subsidyInfo.startIndex.add(1);
+                subsidyInfo.refundingSubsidyAmountMap[refundingAddress] = 0;
+
+                // sub total
                 subsidyInfo.total = subsidyInfo.total.sub(singleAmount);
                 poolInfo.demandDepositPool = poolInfo.demandDepositPool.sub(
                     singleAmount
                 );
-                subsidyInfo.refundingSubsidyAmountMap[refundingAddress] = 0;
                 refundingAddress.transfer(singleAmount);
                 emit SubsidyRefund(refundingAddress, singleAmount);
             } else {

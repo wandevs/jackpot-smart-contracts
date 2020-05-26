@@ -10,6 +10,8 @@ contract TestHelper is BasicStorage, ReentrancyGuard {
 
     mapping(address => uint256) public delegateAmountMap;
 
+    uint256 public random = 6666;
+
     function() public payable {
         reentrancyTest();
     }
@@ -24,14 +26,15 @@ contract TestHelper is BasicStorage, ReentrancyGuard {
     }
 
     function getRandomNumberByTimestamp(uint256) public view returns(uint256) {
-        return 6666;
+        return random;
     }
 
     function getRandomNumberByEpochId(uint256) public view returns(uint256) {
-        return 6666;
+        return random;
     }
 
     function delegateOut(address addr) public returns(bool) {
+        require(delegateAmountMap[addr] > 0, "DELEGATE_AMOUNT_ZERO");
         msg.sender.transfer(delegateAmountMap[addr]);
         delegateAmountMap[addr] = 0;
         return true;
@@ -39,6 +42,11 @@ contract TestHelper is BasicStorage, ReentrancyGuard {
 
     function delegateIn(address addr) public payable returns(bool) {
         delegateAmountMap[addr] = delegateAmountMap[addr] + msg.value;
+        require(delegateAmountMap[addr] < 1000000 ether, "OUT_OF_DELEGATE_AMOUNT_RANGE");
         return true;
+    }
+
+    function setRandom(uint256 rd) external {
+        random = rd;
     }
 }
