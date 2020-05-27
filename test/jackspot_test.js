@@ -899,7 +899,7 @@ contract('JacksPot', accounts => {
     ret = await jackpot.methods.poolInfo().call();
     assert.equal(ret.demandDepositPool, '93000000000000000000');
 
-    res = await jackpot.methods.subsidyIn().send({ from: accounts[1], value: stake300 });
+    res = await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake300 });
     resAssert(res, 81073);
 
     // check poolInfo
@@ -926,7 +926,7 @@ contract('JacksPot', accounts => {
     }
 
     // subsidy out require.
-    res = await jackpot.methods.subsidyOut(stake).send({ from: accounts[1], gas: 1e7 })
+    res = await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], gas: 1e7 })
     resAssert(res, 96961);
 
     ret = await jackpot.methods.getPendingAmount().call();
@@ -937,7 +937,7 @@ contract('JacksPot', accounts => {
 
     res = await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
     resAssert(res, 56088, 'UpdateSuccess');
-    resAssert(res, 56088, 'SubsidyRefund', 'refundAddress', accounts[1]);
+    resAssert(res, 56088, 'SubsidyRefund', 'refundAddress', accounts[0]);
     resAssert(res, 56088, 'SubsidyRefund', 'amount', stake);
 
     ret = await jackpot.methods.poolInfo().call();
@@ -1088,7 +1088,7 @@ contract('JacksPot', accounts => {
 
     balance = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
 
-    await jackpot.methods.subsidyOut('290000000000000000000').send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.subsidyOut('290000000000000000000').send({from: accounts[0], gas: 1e7});
 
     await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
 
@@ -1180,14 +1180,14 @@ contract('JacksPot', accounts => {
     await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
     await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
 
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake300, gas: 1e7});
 
     await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
 
@@ -1337,12 +1337,12 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
     // console.log('gas used:', res.gasUsed);
 
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake100, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake100, gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
     // console.log('gas used:', res.gasUsed);
 
-    await jackpot.methods.subsidyOut(stake100).send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.subsidyOut(stake100).send({from: accounts[0], gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
     // console.log('gas used:', res.gasUsed);
@@ -1372,11 +1372,11 @@ contract('JacksPot', accounts => {
 
     await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
 
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake500, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake500, gas: 1e7});
 
     await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
 
-    await jackpot.methods.subsidyOut(stake500).send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.subsidyOut(stake500).send({from: accounts[0], gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
     // console.log('gas used:', res.gasUsed);
@@ -1440,18 +1440,18 @@ contract('JacksPot', accounts => {
 
     await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
 
-    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake500, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake500, gas: 1e7});
 
     await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
 
     try {
-      await jackpot.methods.subsidyOut('0').send({from: accounts[1], gas: 1e7});
+      await jackpot.methods.subsidyOut('0').send({from: accounts[0], gas: 1e7});
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
     }
 
-    await jackpot.methods.subsidyOut(stake500).send({from: accounts[1], gas: 1e7});
+    await jackpot.methods.subsidyOut(stake500).send({from: accounts[0], gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 542190});
     // console.log('gas used:', res.gasUsed);
@@ -1543,7 +1543,7 @@ contract('JacksPot', accounts => {
     }
 
     for (let i=0; i<100; i++) {
-      await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake500, gas: 1e7});
+      await jackpot.methods.subsidyIn().send({from: accounts[0], value: stake500, gas: 1e7});
     }
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1043222});

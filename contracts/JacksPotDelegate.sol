@@ -387,7 +387,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
 
     /// @dev Anyone can call this function to inject a subsidy into the current pool, which is used for the user's refund. It can be returned at any time.
     /// We do not support smart contract call for security.(DoS with revert)
-    function subsidyIn() external payable onlyOperator nonReentrant {
+    function subsidyIn() external payable onlyOwner nonReentrant {
         require(msg.value >= 10 ether, "SUBSIDY_TOO_SMALL");
         require(tx.origin == msg.sender, "NOT_ALLOW_SMART_CONTRACT");
         subsidyAmountMap[msg.sender] = subsidyAmountMap[msg.sender].add(
@@ -399,7 +399,7 @@ contract JacksPotDelegate is JacksPotStorage, ReentrancyGuard, PosHelper {
     }
 
     /// @dev Apply for subsidy refund function. If the current pool is sufficient for application of subsidy, the refund will be made on the daily settlement.
-    function subsidyOut(uint256 amount) external onlyOperator nonReentrant {
+    function subsidyOut(uint256 amount) external onlyOwner nonReentrant {
         require(
             subsidyAmountMap[msg.sender] >= amount,
             "SUBSIDY_AMOUNT_NOT_ENOUGH"
