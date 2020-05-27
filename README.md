@@ -49,7 +49,7 @@ Then you can find a HTML-UI in coverage/index.html
 
 Proxy: 0xd8b67e4c66a4ab51fa8b7a30a82c63ff792b79c0
 
-Delegate: 0xf713529b80958f7238f1d7fe54a07b9d86200bc7
+Delegate: 0x8dd7e6a2b5c1e10bab4924a1d5899a6023b9ab9e
 
 ***Mainnet*** 
 
