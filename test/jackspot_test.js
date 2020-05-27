@@ -8,6 +8,7 @@ const stake3 = web3.utils.toWei('30');
 const stake4 = web3.utils.toWei('40');
 const stake500 = web3.utils.toWei('500');
 const stake300 = web3.utils.toWei('300');
+const stake100 = web3.utils.toWei('100');
 const stake1w = web3.utils.toWei('10000');
 const stake10w = web3.utils.toWei('100000');
 
@@ -24,7 +25,7 @@ contract('JacksPot', accounts => {
 
     let balance0 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
     let res = await jackpot.methods.buy([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000, gasPrice });
-    console.log('gasUsed:', res.gasUsed);
+    // console.log('gasUsed:', res.gasUsed);
     // console.log(res.events.Buy.returnValues, await jackpot.methods.userInfoMap(accounts[0]).call());
     assert.equal(res.status, true);
     let balance1 = new BigNumber(await getWeb3().eth.getBalance(accounts[0]));
@@ -41,7 +42,7 @@ contract('JacksPot', accounts => {
     // res = await debug(jackpot.methods.buy([3333, 1234, 0], [stake, stake, stake], { from: accounts[0], value: stake * 3, gas: 10000000 }));
 
     // console.log('events:', res.events);
-    console.log('gasUsed:', res.gasUsed);
+    // console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     balance = await getWeb3().eth.getBalance(jackpot._address);
@@ -52,13 +53,13 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.buy([1111, 2222], [stake, stake]).send({ from: accounts[0], value: stake * 2, gas: 10000000 });
     // console.log('events:', res.events);
 
-    console.log('gasUsed:', res.gasUsed);
+    // console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     res = await jackpot.methods.buy([1111, 2222], [stake, stake]).send({ from: accounts[accounts.length - 1], value: stake * 2, gas: 10000000 });
     // console.log('events:', res.events);
 
-    console.log('gasUsed:', res.gasUsed);
+    // console.log('gasUsed:', res.gasUsed);
     assert.equal(res.status, true);
 
     let codes = [];
@@ -69,7 +70,7 @@ contract('JacksPot', accounts => {
       codes.push(i);
     }
     res = await jackpot.methods.buy(codes, amounts).send({ from: accounts[0], value: stake * cnt, gas: 10000000 });
-    console.log('gasUsed:', res.gasUsed);
+    // console.log('gasUsed:', res.gasUsed);
     // console.log('events:', res.events);
     // assert.equal(res.events.PoolUpdate.returnValues.demandDepositPool, web3.utils.toWei('590').toString());
 
@@ -87,7 +88,7 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.redeem(codes).send({ from: accounts[0], value: 0, gas: 10000000 });
     // console.log('events:', res.events);
 
-    console.log('gasUsed:', res.gasUsed);
+    // console.log('gasUsed:', res.gasUsed);
     ret = await jackpot.methods.userInfoMap(accounts[0]).call();
     // console.log(ret);
     // console.log(web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[0])));
@@ -708,6 +709,7 @@ contract('JacksPot', accounts => {
 
   it('should failed subsidyIn < 10', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
+    await jackpot.methods.setOperator(accounts[0]).send({from: accounts[0], gas: 1e7});
     try {
       await jackpot.methods.subsidyIn().send({ from: accounts[0], value: web3.utils.toWei('5'), gas: 10000000 });
       assert(false, 'Should never get here');
@@ -718,6 +720,7 @@ contract('JacksPot', accounts => {
 
   it('should success subsidyIn >= 10', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
+    await jackpot.methods.setOperator(accounts[0]).send({from: accounts[0], gas: 1e7});
     await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake, gas: 10000000 });
     let ret = await jackpot.methods.subsidyInfo().call();
     assert.equal(ret.total, stake.toString());
@@ -725,6 +728,7 @@ contract('JacksPot', accounts => {
 
   it('should failed subsidyOut non-in', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
+    await jackpot.methods.setOperator(accounts[0]).send({from: accounts[0], gas: 1e7});
     try {
       await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
       assert(false, 'Should never get here');
@@ -735,6 +739,7 @@ contract('JacksPot', accounts => {
 
   it('should success subsidyOut with subsidyIn >= 10', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
+    await jackpot.methods.setOperator(accounts[0]).send({from: accounts[0], gas: 1e7});
     await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake, gas: 10000000 });
     await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
     let ret = await jackpot.methods.subsidyInfo().call();
@@ -748,6 +753,7 @@ contract('JacksPot', accounts => {
 
   it('should failed subsidyOut again', async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
+    await jackpot.methods.setOperator(accounts[0]).send({from: accounts[0], gas: 1e7});
     await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake, gas: 10000000 });
     await jackpot.methods.subsidyOut(stake).send({ from: accounts[0], value: 0, gas: 10000000 });
     let ret = await jackpot.methods.subsidyInfo().call();
@@ -777,6 +783,8 @@ contract('JacksPot', accounts => {
       let jackpotProxy = sc.jackpotProxy;
       let jackpot = sc.jackpot;
       let ret = await jackpotProxy.methods.implementation().call();
+      await jackpot.methods.setOperator(accounts[0]).send({from: accounts[0], gas: 1e7});
+      
       // console.log(ret);
       await jackpot.methods.subsidyIn().send({ from: accounts[0], value: stake, gas: 10000000 });
       assert(false, 'Should never get here');
@@ -891,7 +899,7 @@ contract('JacksPot', accounts => {
     ret = await jackpot.methods.poolInfo().call();
     assert.equal(ret.demandDepositPool, '93000000000000000000');
 
-    res = await jackpot.methods.subsidyIn().send({ from: accounts[5], value: stake300 });
+    res = await jackpot.methods.subsidyIn().send({ from: accounts[1], value: stake300 });
     resAssert(res, 81073);
 
     // check poolInfo
@@ -918,7 +926,7 @@ contract('JacksPot', accounts => {
     }
 
     // subsidy out require.
-    res = await jackpot.methods.subsidyOut(stake).send({ from: accounts[5], gas: 1e7 })
+    res = await jackpot.methods.subsidyOut(stake).send({ from: accounts[1], gas: 1e7 })
     resAssert(res, 96961);
 
     ret = await jackpot.methods.getPendingAmount().call();
@@ -929,7 +937,7 @@ contract('JacksPot', accounts => {
 
     res = await jackpot.methods.update().send({ from: accounts[1], gas: 1e7 });
     resAssert(res, 56088, 'UpdateSuccess');
-    resAssert(res, 56088, 'SubsidyRefund', 'refundAddress', accounts[5]);
+    resAssert(res, 56088, 'SubsidyRefund', 'refundAddress', accounts[1]);
     resAssert(res, 56088, 'SubsidyRefund', 'amount', stake);
 
     ret = await jackpot.methods.poolInfo().call();
@@ -1080,7 +1088,7 @@ contract('JacksPot', accounts => {
 
     balance = web3.utils.fromWei(await getWeb3().eth.getBalance(accounts[3]));
 
-    await jackpot.methods.subsidyOut('290000000000000000000').send({from: accounts[5], gas: 1e7});
+    await jackpot.methods.subsidyOut('290000000000000000000').send({from: accounts[1], gas: 1e7});
 
     await jackpot.methods.runDelegateIn().send({from:accounts[1], gas:1e7});
 
@@ -1172,14 +1180,14 @@ contract('JacksPot', accounts => {
     await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
     await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
 
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
-    await jackpot.methods.subsidyIn().send({from: accounts[3], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake300, gas: 1e7});
 
     await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
 
@@ -1323,25 +1331,21 @@ contract('JacksPot', accounts => {
 
     await jackpot.methods.close().send({from: accounts[1], gas: 1e7});
     res = await jackpot.methods.lotterySettlement().send({from: accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
     // console.log(res.events);
     await jackpot.methods.open().send({from: accounts[1], gas: 1e7});
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
 
-    for (let i=0; i<100; i++) {
-      await jackpot.methods.subsidyIn().send({from: accounts[i], value: stake, gas: 1e7});
-    }
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake100, gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
 
-    for (let i=0; i<100; i++) {
-      await jackpot.methods.subsidyOut(stake).send({from: accounts[i], gas: 1e7});
-    }
+    await jackpot.methods.subsidyOut(stake100).send({from: accounts[1], gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
 
   });
 
@@ -1368,18 +1372,14 @@ contract('JacksPot', accounts => {
 
     await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
 
-    for (let i=0; i<60; i++) {
-      await jackpot.methods.subsidyIn().send({from: accounts[i], value: stake, gas: 1e7});
-    }
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake500, gas: 1e7});
 
     await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
 
-    for (let i=0; i<60; i++) {
-      await jackpot.methods.subsidyOut(stake).send({from: accounts[i], gas: 1e7});
-    }
+    await jackpot.methods.subsidyOut(stake500).send({from: accounts[1], gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
     // console.log('event:', res.events);
     // console.log('event cnt:', res.events.SubsidyRefund.length);
   });
@@ -1440,25 +1440,21 @@ contract('JacksPot', accounts => {
 
     await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
 
-    for (let i=0; i<60; i++) {
-      await jackpot.methods.subsidyIn().send({from: accounts[i], value: stake, gas: 1e7});
-    }
+    await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake500, gas: 1e7});
 
     await jackpot.methods.redeem([1111]).send({from: accounts[2], gas: 1e7});
 
     try {
-      await jackpot.methods.subsidyOut('0').send({from: accounts[0], gas: 1e7});
+      await jackpot.methods.subsidyOut('0').send({from: accounts[1], gas: 1e7});
       assert(false, 'Should never get here');
     } catch (e) {
       assert.ok(e.message.match(/revert/));
     }
 
-    for (let i=0; i<60; i++) {
-      await jackpot.methods.subsidyOut(stake).send({from: accounts[i], gas: 1e7});
-    }
+    await jackpot.methods.subsidyOut(stake500).send({from: accounts[1], gas: 1e7});
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 542190});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
     // console.log('event:', res.events);
     // console.log('event cnt:', res.events.SubsidyRefund.length);
   });
@@ -1494,7 +1490,7 @@ contract('JacksPot', accounts => {
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
     await jackpot.methods.runDelegateOut(accounts[0]).send({from: accounts[1], gas: 1e7});
     res = await jackpot.methods.update().send({from: accounts[1], gas: 2093986});
-    console.log('gas used:', res.gasUsed);
+    // console.log('gas used:', res.gasUsed);
     // resAssert(res, 539414, 'GasNotEnough');
 
     // console.log('event:', res.events);
@@ -1542,11 +1538,12 @@ contract('JacksPot', accounts => {
 
     for (let i=0; i<100; i++) {
       res = await jackpot.methods.prizeWithdraw().send({from: accounts[i], gas: 1e7});
+      await jackpot.methods.isUserPrizeWithdrawPending(accounts[i]).call();
       // console.log(res.events);
     }
 
     for (let i=0; i<100; i++) {
-      await jackpot.methods.subsidyIn().send({from: accounts[i], value: stake500, gas: 1e7});
+      await jackpot.methods.subsidyIn().send({from: accounts[1], value: stake500, gas: 1e7});
     }
 
     res = await jackpot.methods.update().send({from: accounts[1], gas: 1043222});
@@ -1572,7 +1569,7 @@ contract('JacksPot', accounts => {
       amounts.push(stake);
       total = total.add(web3.utils.toBN(stake));
     }
-    console.log(total.toString());
+    // console.log(total.toString());
     await jackpot.methods.buy(codes, amounts).send({from: accounts[2], value: total.toString(), gas: 1e7});
     codes = [];
     amounts = [];
@@ -1583,7 +1580,7 @@ contract('JacksPot', accounts => {
       amounts.push(stake);
       total = total.add(web3.utils.toBN(stake));
     }
-    console.log(total.toString());
+    // console.log(total.toString());
 
     try {
       await jackpot.methods.buy(codes, amounts).send({from: accounts[2], value: total.toString(), gas: 1e7});
@@ -1751,7 +1748,7 @@ contract('JacksPot', accounts => {
     }
   });
 
-  it.skip("verify issue test", async () => {
+  it("verify issue test", async () => {
     let jackpot = (await getContracts(accounts)).jackpot;
     const testHelper = await getTestHelper();
     let res = {};
@@ -1770,7 +1767,10 @@ contract('JacksPot', accounts => {
     // set validator
     await jackpot.methods.setValidator(accounts[0]).send({ from: accounts[1], gas: 1e7 });
 
-    let balance0 = await getWeb3().eth.getBalance(accounts[0]);
+    let balance0 = [];
+    for (let i=0; i<20; i++) {
+      balance0.push((await getWeb3().eth.getBalance(accounts[i])).toString());
+    }
 
     let first = true;
 
@@ -1778,7 +1778,7 @@ contract('JacksPot', accounts => {
       for (let i=0; i<10; i++) {
         await jackpot.methods.buy([i], [stake500]).send({from: accounts[i], value: stake500, gas: 1e7});
       }
-  
+
       if (first) {
         await jackpot.methods.runDelegateIn().send({from: accounts[1], gas: 1e7});
       }
@@ -1788,11 +1788,10 @@ contract('JacksPot', accounts => {
       if (!first) {
         for (let i=10; i<20; i++) {
           let balance = await getWeb3().eth.getBalance(accounts[i]);
-          assert.equal(Math.abs(Number(web3.utils.fromWei(balance0)) - Number(web3.utils.fromWei(balance))) < 1, true, Math.abs(Number(web3.utils.fromWei(balance0)) - Number(web3.utils.fromWei(balance))).toString());
+          assert.equal(Math.abs(Number(web3.utils.fromWei(balance0[i])) - Number(web3.utils.fromWei(balance))) < 1, true, Math.abs(Number(web3.utils.fromWei(balance0[i])) - Number(web3.utils.fromWei(balance))).toString());
         }
       }
       
-  
       for (let i=0; i<10; i++) {
         await jackpot.methods.redeem([i]).send({from: accounts[i], gas: 1e7});
       }
@@ -1811,10 +1810,10 @@ contract('JacksPot', accounts => {
 
       await jackpot.methods.update().send({from: accounts[1], gas: 1e7});
 
-  
       for (let i=0; i<10; i++) {
         let balance = await getWeb3().eth.getBalance(accounts[i]);
-        assert.equal(Math.abs(Number(web3.utils.fromWei(balance0)) - Number(web3.utils.fromWei(balance))) < 1, true, Math.abs(Number(web3.utils.fromWei(balance0)) - Number(web3.utils.fromWei(balance))).toString());
+        // console.log('m', m, 'i', i, 'balance0', Number(web3.utils.fromWei(balance0[i])), 'balance', Number(web3.utils.fromWei(balance)));
+        assert.equal(Math.abs(Number(web3.utils.fromWei(balance0[i])) - Number(web3.utils.fromWei(balance))) < 1, true, Math.abs(Number(web3.utils.fromWei(balance0[i])) - Number(web3.utils.fromWei(balance))).toString());
       }
   
       first = false;
