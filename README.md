@@ -33,9 +33,9 @@ Proxy: 0x76b074d91f546914c6765ef81cbdc6f9c7da5685
 
 Delegate: 0x6558b7926a6c9882d5c1b83731f12fd132dfe767
 
-validators
+## Validators Selection
 
-|  name  | address  | available  | currentFee  |
+|  name  | address  | capacity  | currentFee  |
 |  ----  | ----  | ----  | ----  |
 | WANBr  | 0x1f45cad3c17ced4d7596a5b40280a3f024b971f4 | 341381 | 0.9% |
 | WAN.CN  | 0xd058aa0522de5f3cfac539cb8d270d6e570c717d | 573079 | 1% |
