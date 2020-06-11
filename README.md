@@ -18,32 +18,8 @@ If there is no winner, the prize pot will automatically accumulate to the next c
 
 If you do not withdraw your tickets, those tickets will automatically participate in the next cycle with your chosen numbers.
 
-# Code Compile
 
-```
-yarn
-./node_modules/.bin/truffle compile
-```
-
-# Run Code Test
-
-You should first start a rpc server at http://localhost:7545
-
-Then run:
-
-```
-yarn test
-```
-
-# Run Code Coverage Analysis
-
-```
-yarn coverage
-```
-
-Then you can find a HTML-UI in coverage/index.html 
-
-# Deploy
+# Deployment
 
 ***Testnet*** 
 
@@ -57,6 +33,31 @@ Proxy: 0x76b074d91f546914c6765ef81cbdc6f9c7da5685
 
 Delegate: 0x6558b7926a6c9882d5c1b83731f12fd132dfe767
 
+## Development
 
+## Code Compile
+
+```
+yarn
+./node_modules/.bin/truffle compile
+```
+
+## Run Code Test
+
+You should first start a rpc server at http://localhost:7545
+
+Then run:
+
+```
+yarn test
+```
+
+## Run Code Coverage Analysis
+
+```
+yarn coverage
+```
+
+Then you can find a HTML-UI in coverage/index.html 
 
 
