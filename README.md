@@ -33,7 +33,7 @@ Proxy: 0x76b074d91f546914c6765ef81cbdc6f9c7da5685
 
 Delegate: 0x6558b7926a6c9882d5c1b83731f12fd132dfe767
 
-## Validators Selection
+# Validators Selection
 
 |  name  | address  | capacity  | currentFee  |
 |  ----  | ----  | ----  | ----  |
@@ -42,6 +42,10 @@ Delegate: 0x6558b7926a6c9882d5c1b83731f12fd132dfe767
 | WanPie  | 0xe8ba6366e156c247aa1f39187e549c6cfee7ffeb | 609686 | 0% |
 | Zhejiang(浙江)  | 0x0288c83219701766197373d1149f616c62b52a7d | 797328 | 5% |
 | Bitrue  | 0x89d91c8a8a17b6c9ebeadcb6dcc1bac664335186 | 1799223 | 0% |
+
+# Jack's Pot Statitics Chart
+
+[https://jacks-pot-chart.now.sh/](https://jacks-pot-chart.now.sh/)
 
 # Development
 
